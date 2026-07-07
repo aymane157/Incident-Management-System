@@ -1,8 +1,11 @@
 import { Search, Bell, Plus, Ticket, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
 
 export default function ClientHome() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const firstName = user?.name?.split(' ')[0] ?? 'vous';
 
   const kpis = [
     { label: 'Total tickets', value: '36', trend: '+12% vs mois dernier', icon: Ticket, color: 'text-primary bg-primary/10', trendColor: 'text-success' },
@@ -16,7 +19,7 @@ export default function ClientHome() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bon retour, Jean 👋</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Bon retour, {firstName} 👋</h1>
           <p className="text-gray-500 text-sm">Voici ce qui se passe aujourd'hui.</p>
         </div>
         <div className="flex items-center space-x-4">
@@ -28,7 +31,7 @@ export default function ClientHome() {
             <Bell className="w-5 h-5" />
             <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
           </button>
-          <button onClick={() => navigate('/create')} className="btn-primary space-x-2">
+          <button onClick={() => navigate('/client/create')} className="btn-primary space-x-2">
             <Plus className="w-4 h-4" />
             <span>Nouveau Ticket</span>
           </button>
