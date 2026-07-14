@@ -1,10 +1,8 @@
 package com.entreprise.incidentmanagement.controller;
 
-import com.entreprise.incidentmanagement.domain.Notification;
-import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.NotificationDto;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.service.NotificationService;
-import com.entreprise.incidentmanagement.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,38 +22,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationController {
     private final NotificationService notificationService;
-    private final UserService userService;
 
     @GetMapping
-    public List<Notification> findAll() {
-        return notificationService.findAll();
+    public List<NotificationDto> findAll() {
+        return notificationService.findAllDto();
     }
 
     @GetMapping("/{id}")
-    public Notification findById(@PathVariable Long id) {
-        return notificationService.findById(id)
+    public NotificationDto findById(@PathVariable Long id) {
+        return notificationService.findByIdDto(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id " + id));
     }
 
     @GetMapping("/recipient/{userId}")
-    public List<Notification> findByRecipient(@PathVariable Long userId) {
-        User recipient = userService.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
-        return notificationService.findByRecipient(recipient);
+    public List<NotificationDto> findByRecipient(@PathVariable Long userId) {
+        return notificationService.findByRecipientIdDto(userId);
     }
 
     @PostMapping
-    public ResponseEntity<Notification> create(@RequestBody Notification notification) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(notificationService.save(notification));
+    public ResponseEntity<NotificationDto> create(@RequestBody NotificationDto notificationDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(notificationService.saveDto(notificationDto));
     }
 
     @PutMapping("/{id}")
-    public Notification update(@PathVariable Long id, @RequestBody Notification notification) {
-        if (notificationService.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Notification not found with id " + id);
-        }
-        notification.setId(id);
-        return notificationService.save(notification);
+    public NotificationDto update(@PathVariable Long id, @RequestBody NotificationDto notificationDto) {
+        return notificationService.updateDto(id, notificationDto);
     }
 
     @DeleteMapping("/{id}")

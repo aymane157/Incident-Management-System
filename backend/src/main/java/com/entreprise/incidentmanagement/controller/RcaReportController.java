@@ -1,9 +1,7 @@
 package com.entreprise.incidentmanagement.controller;
 
-import com.entreprise.incidentmanagement.domain.Incident;
-import com.entreprise.incidentmanagement.domain.RcaReport;
+import com.entreprise.incidentmanagement.dto.RcaReportDto;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
-import com.entreprise.incidentmanagement.service.IncidentService;
 import com.entreprise.incidentmanagement.service.RcaReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,39 +22,32 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RcaReportController {
     private final RcaReportService rcaReportService;
-    private final IncidentService incidentService;
 
     @GetMapping
-    public List<RcaReport> findAll() {
-        return rcaReportService.findAll();
+    public List<RcaReportDto> findAll() {
+        return rcaReportService.findAllDto();
     }
 
     @GetMapping("/{id}")
-    public RcaReport findById(@PathVariable Long id) {
-        return rcaReportService.findById(id)
+    public RcaReportDto findById(@PathVariable Long id) {
+        return rcaReportService.findByIdDto(id)
                 .orElseThrow(() -> new ResourceNotFoundException("RCA report not found with id " + id));
     }
 
     @GetMapping("/incident/{incidentId}")
-    public RcaReport findByIncident(@PathVariable Long incidentId) {
-        Incident incident = incidentService.findById(incidentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with id " + incidentId));
-        return rcaReportService.findByIncident(incident)
+    public RcaReportDto findByIncident(@PathVariable Long incidentId) {
+        return rcaReportService.findByIncidentIdDto(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("RCA report not found for incident " + incidentId));
     }
 
     @PostMapping
-    public ResponseEntity<RcaReport> create(@RequestBody RcaReport report) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(rcaReportService.save(report));
+    public ResponseEntity<RcaReportDto> create(@RequestBody RcaReportDto reportDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(rcaReportService.saveDto(reportDto));
     }
 
     @PutMapping("/{id}")
-    public RcaReport update(@PathVariable Long id, @RequestBody RcaReport report) {
-        if (rcaReportService.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("RCA report not found with id " + id);
-        }
-        report.setId(id);
-        return rcaReportService.save(report);
+    public RcaReportDto update(@PathVariable Long id, @RequestBody RcaReportDto reportDto) {
+        return rcaReportService.updateDto(id, reportDto);
     }
 
     @DeleteMapping("/{id}")

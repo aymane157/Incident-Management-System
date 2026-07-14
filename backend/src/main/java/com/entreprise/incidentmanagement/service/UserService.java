@@ -1,6 +1,8 @@
 package com.entreprise.incidentmanagement.service;
 
 import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.UserDto;
+import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
 import com.entreprise.incidentmanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,9 +31,38 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
+    @Transactional(readOnly = true)
+    public List<UserDto> findAllDto() {
+        return findAll().stream().map(DomainDtoMapper::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<UserDto> findByIdDto(Long id) {
+        return findById(id).map(DomainDtoMapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<UserDto> findByEmailDto(String email) {
+        return findByEmail(email).map(DomainDtoMapper::toDto);
+    }
+
     @Transactional
     public User save(User user) {
         return userRepository.save(user);
+    }
+
+    @Transactional
+    public UserDto saveDto(UserDto userDto) {
+        return DomainDtoMapper.toDto(save(DomainDtoMapper.toEntity(userDto)));
+    }
+
+    @Transactional
+    public UserDto updateDto(Long id, UserDto userDto) {
+        User existing = findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id " + id));
+        User updated = DomainDtoMapper.toEntity(userDto);
+        updated.setId(existing.getId());
+        return DomainDtoMapper.toDto(userRepository.save(updated));
     }
 
     @Transactional
