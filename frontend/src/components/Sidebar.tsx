@@ -1,36 +1,83 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Ticket, PlusCircle, BookOpen,
+  LayoutDashboard, Ticket, PlusCircle,
   HelpCircle, LogOut, Settings, Users, Layers,
-  Shield, Zap
+  Shield, Zap, Wrench, FileText, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+
+type NavItem = { name: string; path: string; icon: React.ElementType };
+
+const clientNav: NavItem[] = [
+  { name: 'Vue d\'ensemble',       path: '/client/home',   icon: LayoutDashboard },
+  { name: 'Mes tickets',           path: '/client/tickets', icon: Ticket          },
+  { name: 'Nouveau ticket',        path: '/client/create',  icon: PlusCircle      },
+
+];
+
+const managerNav: NavItem[] = [
+  { name: 'Tableau de bord',  path: '/manager/home',      icon: LayoutDashboard },
+  { name: 'Workspace',        path: '/manager/workspace', icon: Zap             },
+];
+
+const adminNav: NavItem[] = [
+  { name: 'Utilisateurs',  path: '/admin',          icon: Users    },
+  { name: 'Applications',  path: '/admin/apps',     icon: Layers   },
+  { name: 'Équipes',       path: '/admin/teams',    icon: Users    },
+  { name: 'SLA & Règles',  path: '/admin/sla',      icon: Shield   },
+  { name: 'Paramètres',    path: '/admin/settings', icon: Settings },
+];
+
+const rtNav: NavItem[] = [
+  { name: 'Mes incidents',    path: '/rt/home',   icon: ClipboardList },
+  { name: 'Créer un rapport', path: '/rt/report', icon: FileText      },
+];
+
+const roleConfig: Record<
+  string,
+  { label: string; badge: string; badgeColor: string; avatarBg: string; nav: NavItem[]; BadgeIcon: React.ElementType }
+> = {
+  client: {
+    label: 'Client',
+    badge: 'CLIENT',
+    badgeColor: 'bg-primary/20 text-primary',
+    avatarBg: 'bg-primary',
+    nav: clientNav,
+    BadgeIcon: Users,
+  },
+  manager: {
+    label: 'Incident Manager',
+    badge: 'INCIDENT MANAGER',
+    badgeColor: 'bg-secondary/20 text-secondary',
+    avatarBg: 'bg-secondary',
+    nav: managerNav,
+    BadgeIcon: Shield,
+  },
+  admin: {
+    label: 'Administrateur',
+    badge: 'ADMIN',
+    badgeColor: 'bg-danger/20 text-danger',
+    avatarBg: 'bg-danger',
+    nav: adminNav,
+    BadgeIcon: Settings,
+  },
+  rt: {
+    label: 'Resp. de Traitement',
+    badge: 'RESP. TRAITEMENT',
+    badgeColor: 'bg-warning/20 text-warning',
+    avatarBg: 'bg-warning',
+    nav: rtNav,
+    BadgeIcon: Wrench,
+  },
+};
 
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const isManager = user?.role === 'manager';
-
-  const clientNav = [
-    { name: 'Vue d\'ensemble',      path: '/client/home',   icon: LayoutDashboard },
-    { name: 'Mes tickets',          path: '/client/tickets', icon: Ticket          },
-    { name: 'Nouveau ticket',       path: '/client/create',  icon: PlusCircle      },
-    { name: 'Base de connaissances',path: '/client/kb',      icon: BookOpen        },
-  ];
-
-  const managerNav = [
-    { name: 'Tableau de bord',  path: '/manager/home',      icon: LayoutDashboard },
-    { name: 'Workspace',        path: '/manager/workspace', icon: Zap             },
-    { name: 'Utilisateurs',     path: '/admin',             icon: Users           },
-    { name: 'Applications',     path: '/admin/apps',        icon: Layers          },
-    { name: 'Équipes',          path: '/admin/teams',        icon: Users           },
-    { name: 'SLA & Règles',     path: '/admin/sla',          icon: Shield          },
-    { name: 'Paramètres',       path: '/admin/settings',    icon: Settings        },
-  ];
-
-  const navItems = isManager ? managerNav : clientNav;
+  const config = roleConfig[user?.role ?? 'client'] ?? roleConfig.client;
+  const { label, badge, badgeColor, avatarBg, nav, BadgeIcon } = config;
 
   const handleLogout = () => {
     logout();
@@ -48,26 +95,26 @@ export default function Sidebar() {
 
         {/* User info */}
         <div className="p-4 flex items-center space-x-3 mb-2">
-          <div className={`w-10 h-10 rounded-full border border-gray-600 flex items-center justify-center text-xs font-bold text-white ${isManager ? 'bg-secondary' : 'bg-primary'}`}>
+          <div className={`w-10 h-10 rounded-full border border-gray-600 flex items-center justify-center text-xs font-bold text-white ${avatarBg}`}>
             {user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2) ?? 'U'}
           </div>
           <div>
-            <p className="text-xs text-gray-400">{isManager ? 'Incident Manager' : 'Client'}</p>
+            <p className="text-xs text-gray-400">{label}</p>
             <p className="text-sm font-semibold text-white">{user?.name ?? 'Utilisateur'}</p>
           </div>
         </div>
 
         {/* Role badge */}
         <div className="px-4 mb-3">
-          <span className={`inline-flex items-center space-x-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full ${isManager ? 'bg-secondary/20 text-secondary' : 'bg-primary/20 text-primary'}`}>
-            {isManager ? <Shield className="w-3 h-3" /> : <Users className="w-3 h-3" />}
-            <span>{isManager ? 'INCIDENT MANAGER' : 'CLIENT'}</span>
+          <span className={`inline-flex items-center space-x-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full ${badgeColor}`}>
+            <BadgeIcon className="w-3 h-3" />
+            <span>{badge}</span>
           </span>
         </div>
 
         {/* Nav */}
         <nav className="px-3 space-y-1">
-          {navItems.map((item) => {
+          {nav.map((item) => {
             const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             return (
               <Link

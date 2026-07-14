@@ -1,12 +1,27 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
+import type { UserRole } from './lib/auth';
 import Login from './pages/Login';
 import ClientHome from './pages/ClientHome';
+import ClientTickets from './pages/ClientTickets';
 import CreateIncident from './pages/CreateIncident';
 import IncidentWorkspace from './pages/IncidentWorkspace';
 import AdminSettings from './pages/AdminSettings';
 import ManagerHome from './pages/ManagerHome';
+import RTHome from './pages/RTHome';
+import RTIncidentDetail from './pages/RTIncidentDetail';
 import Sidebar from './components/Sidebar';
+
+// ─── Role → default home route ────────────────────────────────────────────────
+
+function homeRoute(role: UserRole): string {
+  switch (role) {
+    case 'client':  return '/client/home';
+    case 'manager': return '/manager/home';
+    case 'admin':   return '/admin';
+    case 'rt':      return '/rt/home';
+  }
+}
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
@@ -27,15 +42,15 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 /**
  * Redirects to /login if the user is not authenticated.
- * Optionally enforces a specific role — redirects to the user's
- * own home if they try to access the wrong role's pages.
+ * If `allowedRoles` is provided, redirects to the user's own home
+ * when their role is not in the allowed list.
  */
 function ProtectedRoute({
   children,
-  requiredRole,
+  allowedRoles,
 }: {
   children: React.ReactNode;
-  requiredRole?: 'client' | 'manager';
+  allowedRoles?: UserRole[];
 }) {
   const { user } = useAuth();
 
@@ -43,9 +58,8 @@ function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole && user.role !== requiredRole) {
-    // Redirect to the user's own home
-    return <Navigate to={user.role === 'client' ? '/client/home' : '/manager/home'} replace />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to={homeRoute(user.role)} replace />;
   }
 
   return <>{children}</>;
@@ -61,11 +75,11 @@ function AppRoutes() {
       {/* Public */}
       <Route path="/login" element={<Login />} />
 
-      {/* Client-only pages */}
+      {/* ── CLIENT ─────────────────────────────────────────────────── */}
       <Route
         path="/client/home"
         element={
-          <ProtectedRoute requiredRole="client">
+          <ProtectedRoute allowedRoles={['client']}>
             <AppLayout><ClientHome /></AppLayout>
           </ProtectedRoute>
         }
@@ -73,7 +87,7 @@ function AppRoutes() {
       <Route
         path="/client/create"
         element={
-          <ProtectedRoute requiredRole="client">
+          <ProtectedRoute allowedRoles={['client']}>
             <AppLayout><CreateIncident /></AppLayout>
           </ProtectedRoute>
         }
@@ -81,25 +95,25 @@ function AppRoutes() {
       <Route
         path="/client/tickets"
         element={
-          <ProtectedRoute requiredRole="client">
-            <AppLayout><ClientHome /></AppLayout>
+          <ProtectedRoute allowedRoles={['client']}>
+            <AppLayout><ClientTickets /></AppLayout>
           </ProtectedRoute>
         }
       />
       <Route
         path="/client/kb"
         element={
-          <ProtectedRoute requiredRole="client">
+          <ProtectedRoute allowedRoles={['client']}>
             <AppLayout><ClientHome /></AppLayout>
           </ProtectedRoute>
         }
       />
 
-      {/* Manager-only pages */}
+      {/* ── INCIDENT MANAGER ───────────────────────────────────────── */}
       <Route
         path="/manager/home"
         element={
-          <ProtectedRoute requiredRole="manager">
+          <ProtectedRoute allowedRoles={['manager']}>
             <AppLayout><ManagerHome /></AppLayout>
           </ProtectedRoute>
         }
@@ -107,17 +121,17 @@ function AppRoutes() {
       <Route
         path="/manager/workspace"
         element={
-          <ProtectedRoute requiredRole="manager">
+          <ProtectedRoute allowedRoles={['manager']}>
             <AppLayout><IncidentWorkspace /></AppLayout>
           </ProtectedRoute>
         }
       />
 
-      {/* Admin pages — accessible to managers */}
+      {/* ── ADMIN ──────────────────────────────────────────────────── */}
       <Route
         path="/admin"
         element={
-          <ProtectedRoute requiredRole="manager">
+          <ProtectedRoute allowedRoles={['admin']}>
             <AppLayout><AdminSettings /></AppLayout>
           </ProtectedRoute>
         }
@@ -125,7 +139,7 @@ function AppRoutes() {
       <Route
         path="/admin/apps"
         element={
-          <ProtectedRoute requiredRole="manager">
+          <ProtectedRoute allowedRoles={['admin']}>
             <AppLayout><AdminSettings /></AppLayout>
           </ProtectedRoute>
         }
@@ -133,7 +147,7 @@ function AppRoutes() {
       <Route
         path="/admin/teams"
         element={
-          <ProtectedRoute requiredRole="manager">
+          <ProtectedRoute allowedRoles={['admin']}>
             <AppLayout><AdminSettings /></AppLayout>
           </ProtectedRoute>
         }
@@ -141,7 +155,7 @@ function AppRoutes() {
       <Route
         path="/admin/sla"
         element={
-          <ProtectedRoute requiredRole="manager">
+          <ProtectedRoute allowedRoles={['admin']}>
             <AppLayout><AdminSettings /></AppLayout>
           </ProtectedRoute>
         }
@@ -149,8 +163,34 @@ function AppRoutes() {
       <Route
         path="/admin/settings"
         element={
-          <ProtectedRoute requiredRole="manager">
+          <ProtectedRoute allowedRoles={['admin']}>
             <AppLayout><AdminSettings /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ── RESPONSABLE DE TRAITEMENT ──────────────────────────────── */}
+      <Route
+        path="/rt/home"
+        element={
+          <ProtectedRoute allowedRoles={['rt']}>
+            <AppLayout><RTHome /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rt/incident/:id"
+        element={
+          <ProtectedRoute allowedRoles={['rt']}>
+            <AppLayout><RTIncidentDetail /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rt/report"
+        element={
+          <ProtectedRoute allowedRoles={['rt']}>
+            <AppLayout><RTHome /></AppLayout>
           </ProtectedRoute>
         }
       />
@@ -160,7 +200,7 @@ function AppRoutes() {
         path="*"
         element={
           user
-            ? <Navigate to={user.role === 'client' ? '/client/home' : '/manager/home'} replace />
+            ? <Navigate to={homeRoute(user.role)} replace />
             : <Navigate to="/login" replace />
         }
       />
