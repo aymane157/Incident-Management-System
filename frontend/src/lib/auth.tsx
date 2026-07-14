@@ -2,7 +2,7 @@ import { createContext, useContext, useState, ReactNode } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type UserRole = 'client' | 'manager';
+export type UserRole = 'client' | 'manager' | 'admin' | 'rt';
 
 export interface AuthUser {
   name: string;

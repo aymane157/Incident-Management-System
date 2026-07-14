@@ -1,7 +1,49 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Users, Shield } from 'lucide-react';
+import { Eye, EyeOff, Users, Shield, Settings, Wrench } from 'lucide-react';
 import { useAuth, UserRole } from '../lib/auth';
+
+const roles: {
+  id: UserRole;
+  label: string;
+  sublabel: string;
+  icon: React.ElementType;
+  homeRoute: string;
+  mockName: string;
+}[] = [
+  {
+    id: 'client',
+    label: 'Client',
+    sublabel: 'Déclarez & suivez\nvos incidents',
+    icon: Users,
+    homeRoute: '/client/home',
+    mockName: 'Jean Dupont',
+  },
+  {
+    id: 'manager',
+    label: 'Incident Manager',
+    sublabel: 'Gérez & pilotez\nles incidents',
+    icon: Shield,
+    homeRoute: '/manager/home',
+    mockName: 'Marie Martin',
+  },
+  {
+    id: 'admin',
+    label: 'Administrateur',
+    sublabel: 'Gérez les utilisateurs\n& la configuration',
+    icon: Settings,
+    homeRoute: '/admin',
+    mockName: 'Admin DXC',
+  },
+  {
+    id: 'rt',
+    label: 'Resp. de Traitement',
+    sublabel: 'Résolvez & rapportez\nles incidents assignés',
+    icon: Wrench,
+    homeRoute: '/rt/home',
+    mockName: 'Thomas Bernard',
+  },
+];
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,11 +52,12 @@ export default function Login() {
   const [role, setRole] = useState<UserRole>('client');
   const [email, setEmail] = useState('');
 
+  const selected = roles.find(r => r.id === role)!;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const name = role === 'client' ? 'Jean Dupont' : 'Marie Martin';
-    login({ name, email: email || `${role}@dxc.com`, role });
-    navigate(role === 'client' ? '/client/home' : '/manager/home');
+    login({ name: selected.mockName, email: email || `${role}@dxc.com`, role });
+    navigate(selected.homeRoute);
   };
 
   return (
@@ -40,7 +83,7 @@ export default function Login() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-md flex flex-col items-center px-6">
+      <div className="relative z-10 w-full max-w-lg flex flex-col items-center px-6">
 
         {/* DXC Logo */}
         <div className="flex flex-col items-center mb-8">
@@ -53,14 +96,7 @@ export default function Login() {
         </div>
 
         {/* Welcome Text */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-white mb-2 leading-snug">
-            Bienvenue sur<br />DXC Incident Hub
-          </h1>
-          <p className="text-xs text-gray-300 font-light leading-relaxed">
-            Connectez-vous pour accéder à votre espace de gestion des incidents.
-          </p>
-        </div>
+       
 
         {/* Role Selector */}
         <div className="w-full mb-5">
@@ -68,40 +104,30 @@ export default function Login() {
             Je me connecte en tant que
           </p>
           <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              id="role-client"
-              onClick={() => setRole('client')}
-              className={
-                'flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all duration-200 ' +
-                (role === 'client'
-                  ? 'border-purple-500 bg-purple-500/20 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
-                  : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:bg-white/10')
-              }
-            >
-              <Users className="w-5 h-5" />
-              <span className="text-xs font-semibold tracking-wide">Client</span>
-              <span className="text-[10px] opacity-60 leading-tight text-center px-2">
-                Déclarez &amp; suivez<br />vos incidents
-              </span>
-            </button>
-            <button
-              type="button"
-              id="role-manager"
-              onClick={() => setRole('manager')}
-              className={
-                'flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all duration-200 ' +
-                (role === 'manager'
-                  ? 'border-purple-500 bg-purple-500/20 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
-                  : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:bg-white/10')
-              }
-            >
-              <Shield className="w-5 h-5" />
-              <span className="text-xs font-semibold tracking-wide">Incident Manager</span>
-              <span className="text-[10px] opacity-60 leading-tight text-center px-2">
-                Gérez &amp; validez<br />les incidents
-              </span>
-            </button>
+            {roles.map(r => {
+              const Icon = r.icon;
+              const isSelected = role === r.id;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  id={`role-${r.id}`}
+                  onClick={() => setRole(r.id)}
+                  className={
+                    'flex flex-col items-center gap-1.5 py-3.5 rounded-xl border-2 transition-all duration-200 ' +
+                    (isSelected
+                      ? 'border-purple-500 bg-purple-500/20 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
+                      : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:bg-white/10')
+                  }
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs font-semibold tracking-wide">{r.label}</span>
+                  <span className="text-[10px] opacity-60 leading-tight text-center px-2 whitespace-pre-line">
+                    {r.sublabel}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -154,7 +180,7 @@ export default function Login() {
               type="submit"
               className="w-full bg-[#3b0b8c] hover:bg-[#2c086e] text-white font-medium py-3 rounded-md transition-colors text-sm mt-3"
             >
-              Se connecter en tant que {role === 'client' ? 'Client' : 'Incident Manager'}
+              Se connecter en tant que {selected.label}
             </button>
           </form>
         </div>
