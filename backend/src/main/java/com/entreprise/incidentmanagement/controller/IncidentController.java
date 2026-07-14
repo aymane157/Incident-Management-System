@@ -1,7 +1,7 @@
 package com.entreprise.incidentmanagement.controller;
 
-import com.entreprise.incidentmanagement.domain.Incident;
 import com.entreprise.incidentmanagement.domain.IncidentStatus;
+import com.entreprise.incidentmanagement.dto.IncidentDto;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.service.IncidentService;
 import lombok.RequiredArgsConstructor;
@@ -25,33 +25,29 @@ public class IncidentController {
     private final IncidentService incidentService;
 
     @GetMapping
-    public List<Incident> findAll() {
-        return incidentService.findAll();
+    public List<IncidentDto> findAll() {
+        return incidentService.findAllDto();
     }
 
     @GetMapping("/{id}")
-    public Incident findById(@PathVariable Long id) {
-        return incidentService.findById(id)
+    public IncidentDto findById(@PathVariable Long id) {
+        return incidentService.findByIdDto(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Incident not found with id " + id));
     }
 
     @GetMapping("/status/{status}")
-    public List<Incident> findByStatus(@PathVariable IncidentStatus status) {
-        return incidentService.findByStatus(status);
+    public List<IncidentDto> findByStatus(@PathVariable IncidentStatus status) {
+        return incidentService.findByStatusDto(status);
     }
 
     @PostMapping
-    public ResponseEntity<Incident> create(@RequestBody Incident incident) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(incidentService.save(incident));
+    public ResponseEntity<IncidentDto> create(@RequestBody IncidentDto incidentDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(incidentService.saveDto(incidentDto));
     }
 
     @PutMapping("/{id}")
-    public Incident update(@PathVariable Long id, @RequestBody Incident incident) {
-        if (incidentService.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Incident not found with id " + id);
-        }
-        incident.setId(id);
-        return incidentService.save(incident);
+    public IncidentDto update(@PathVariable Long id, @RequestBody IncidentDto incidentDto) {
+        return incidentService.updateDto(id, incidentDto);
     }
 
     @DeleteMapping("/{id}")

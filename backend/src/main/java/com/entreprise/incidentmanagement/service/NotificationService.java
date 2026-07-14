@@ -2,6 +2,8 @@ package com.entreprise.incidentmanagement.service;
 
 import com.entreprise.incidentmanagement.domain.Notification;
 import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.NotificationDto;
+import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.repository.NotificationRepository;
 import com.entreprise.incidentmanagement.repository.UserRepository;
@@ -29,6 +31,16 @@ public class NotificationService {
     }
 
     @Transactional(readOnly = true)
+    public List<NotificationDto> findAllDto() {
+        return findAll().stream().map(DomainDtoMapper::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<NotificationDto> findByIdDto(Long id) {
+        return findById(id).map(DomainDtoMapper::toDto);
+    }
+
+    @Transactional(readOnly = true)
     public List<Notification> findByRecipient(User recipient) {
         if(!userRepository.findById(recipient.getId()).isPresent()) {
             throw new ResourceNotFoundException("User does not exist");
@@ -36,9 +48,30 @@ public class NotificationService {
         return notificationRepository.findByRecipient(recipient);
     }
 
+    @Transactional(readOnly = true)
+    public List<NotificationDto> findByRecipientIdDto(Long userId) {
+        User recipient = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User does not exist"));
+        return findByRecipient(recipient).stream().map(DomainDtoMapper::toDto).toList();
+    }
+
     @Transactional
     public Notification save(Notification notification) {
         return notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public NotificationDto saveDto(NotificationDto notificationDto) {
+        return DomainDtoMapper.toDto(save(DomainDtoMapper.toEntity(notificationDto)));
+    }
+
+    @Transactional
+    public NotificationDto updateDto(Long id, NotificationDto notificationDto) {
+        Notification existing = findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id " + id));
+        Notification updated = DomainDtoMapper.toEntity(notificationDto);
+        updated.setId(existing.getId());
+        return DomainDtoMapper.toDto(notificationRepository.save(updated));
     }
 
     @Transactional
