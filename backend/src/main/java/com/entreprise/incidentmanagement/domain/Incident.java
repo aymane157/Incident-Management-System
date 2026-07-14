@@ -19,6 +19,9 @@ public class Incident {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+
+    private String Reference;
+
     @Column(nullable = false)
     private String name;
 

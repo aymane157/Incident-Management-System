@@ -1,13 +1,12 @@
-package com.rlm.backend;
+package com.entreprise.incidentmanagement;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@SpringBootTest(classes = IncidentManagementApplication.class)
 class BackendApplicationTests {
 
     @Test
     void contextLoads() {
     }
-
 }
