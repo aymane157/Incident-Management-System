@@ -1,6 +1,6 @@
 package com.entreprise.incidentmanagement.controller;
 
-import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.UserDto;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,34 +24,30 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public List<User> findAll() {
-        return userService.findAll();
+    public List<UserDto> findAll() {
+        return userService.findAllDto();
     }
 
     @GetMapping("/{id}")
-    public User findById(@PathVariable Long id) {
-        return userService.findById(id)
+    public UserDto findById(@PathVariable Long id) {
+        return userService.findByIdDto(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
     }
 
     @GetMapping("/email/{email}")
-    public User findByEmail(@PathVariable String email) {
-        return userService.findByEmail(email)
+    public UserDto findByEmail(@PathVariable String email) {
+        return userService.findByEmailDto(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email " + email));
     }
 
     @PostMapping
-    public ResponseEntity<User> create(@RequestBody User user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.save(user));
+    public ResponseEntity<UserDto> create(@RequestBody UserDto userDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.saveDto(userDto));
     }
 
     @PutMapping("/{id}")
-    public User update(@PathVariable Long id, @RequestBody User user) {
-        if (userService.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("User not found with id " + id);
-        }
-        user.setId(id);
-        return userService.save(user);
+    public UserDto update(@PathVariable Long id, @RequestBody UserDto userDto) {
+        return userService.updateDto(id, userDto);
     }
 
     @DeleteMapping("/{id}")

@@ -1,6 +1,6 @@
 package com.entreprise.incidentmanagement.controller;
 
-import com.entreprise.incidentmanagement.domain.Application;
+import com.entreprise.incidentmanagement.dto.ApplicationDto;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.service.ApplicationService;
 import lombok.RequiredArgsConstructor;
@@ -24,34 +24,30 @@ public class ApplicationController {
     private final ApplicationService applicationService;
 
     @GetMapping
-    public List<Application> findAll() {
-        return applicationService.findAll();
+    public List<ApplicationDto> findAll() {
+        return applicationService.findAllDto();
     }
 
     @GetMapping("/{id}")
-    public Application findById(@PathVariable Long id) {
-        return applicationService.findById(id)
+    public ApplicationDto findById(@PathVariable Long id) {
+        return applicationService.findByIdDto(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with id " + id));
     }
 
     @GetMapping("/name/{name}")
-    public Application findByName(@PathVariable String name) {
-        return applicationService.findByName(name)
+    public ApplicationDto findByName(@PathVariable String name) {
+        return applicationService.findByNameDto(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found with name " + name));
     }
 
     @PostMapping
-    public ResponseEntity<Application> create(@RequestBody Application application) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(applicationService.save(application));
+    public ResponseEntity<ApplicationDto> create(@RequestBody ApplicationDto applicationDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(applicationService.saveDto(applicationDto));
     }
 
     @PutMapping("/{id}")
-    public Application update(@PathVariable Long id, @RequestBody Application application) {
-        if (applicationService.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Application not found with id " + id);
-        }
-        application.setId(id);
-        return applicationService.save(application);
+    public ApplicationDto update(@PathVariable Long id, @RequestBody ApplicationDto applicationDto) {
+        return applicationService.updateDto(id, applicationDto);
     }
 
     @DeleteMapping("/{id}")

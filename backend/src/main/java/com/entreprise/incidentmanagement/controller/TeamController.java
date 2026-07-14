@@ -1,7 +1,7 @@
 package com.entreprise.incidentmanagement.controller;
 
-import com.entreprise.incidentmanagement.domain.Team;
-import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.TeamDto;
+import com.entreprise.incidentmanagement.dto.UserDto;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.service.TeamService;
 import lombok.RequiredArgsConstructor;
@@ -25,41 +25,35 @@ public class TeamController {
     private final TeamService teamService;
 
     @GetMapping
-    public List<Team> findAll() {
-        return teamService.findAll();
+    public List<TeamDto> findAll() {
+        return teamService.findAllDto();
     }
 
     @GetMapping("/{id}")
-    public Team findById(@PathVariable Long id) {
-        return teamService.findById(id)
+    public TeamDto findById(@PathVariable Long id) {
+        return teamService.findByIdDto(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with id " + id));
     }
 
     @GetMapping("/name/{name}")
-    public Team findByName(@PathVariable String name) {
-        return teamService.findByName(name)
+    public TeamDto findByName(@PathVariable String name) {
+        return teamService.findByNameDto(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Team not found with name " + name));
     }
 
     @GetMapping("/{id}/members")
-    public List<User> findMembers(@PathVariable Long id) {
-        Team team = teamService.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Team not found with id " + id));
-        return teamService.findMembersByTeam(team);
+    public List<UserDto> findMembers(@PathVariable Long id) {
+        return teamService.findMembersByTeamIdDto(id);
     }
 
     @PostMapping
-    public ResponseEntity<Team> create(@RequestBody Team team) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(teamService.save(team));
+    public ResponseEntity<TeamDto> create(@RequestBody TeamDto teamDto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(teamService.saveDto(teamDto));
     }
 
     @PutMapping("/{id}")
-    public Team update(@PathVariable Long id, @RequestBody Team team) {
-        if (teamService.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Team not found with id " + id);
-        }
-        team.setId(id);
-        return teamService.save(team);
+    public TeamDto update(@PathVariable Long id, @RequestBody TeamDto teamDto) {
+        return teamService.updateDto(id, teamDto);
     }
 
     @DeleteMapping("/{id}")
