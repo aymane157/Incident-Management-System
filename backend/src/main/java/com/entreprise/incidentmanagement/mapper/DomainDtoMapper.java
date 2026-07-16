@@ -126,6 +126,7 @@ public final class DomainDtoMapper {
                 .status(entity.getStatus())
                 .incidentLevel(entity.getIncidentLevel())
                 .application(toDto(entity.getApplication()))
+                .createdBy(toDto(entity.getCreatedBy()))
                 .incidentManager(toDto(entity.getIncidentManager()))
                 .assignedTeam(toDto(entity.getAssignedTeam()))
                 .handledBy(toDto(entity.getHandledBy()))
@@ -145,12 +146,13 @@ public final class DomainDtoMapper {
             return null;
         }
         Incident incident = Incident.builder()
-                .Reference(dto.getReference())
+                .reference(dto.getReference())
                 .name(dto.getName())
                 .description(dto.getDescription())
                 .status(dto.getStatus())
                 .incidentLevel(dto.getIncidentLevel())
                 .application(toEntity(dto.getApplication()))
+                .createdBy(toEntity(dto.getCreatedBy()))
                 .incidentManager(toEntity(dto.getIncidentManager()))
                 .assignedTeam(toEntity(dto.getAssignedTeam()))
                 .handledBy(toEntity(dto.getHandledBy()))

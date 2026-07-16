@@ -16,7 +16,7 @@ public class id_generator {
 
         public String generate() {
         String today = LocalDate.now().format(FMT);
-        long count = incidentRepository.countByIdStartingWith(today);
+        long count = incidentRepository.countByReferenceStartingWith(today);
         return today + "-" + (count + 1);
     }
 }

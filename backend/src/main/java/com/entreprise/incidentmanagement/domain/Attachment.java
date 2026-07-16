@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Attachment {
+public class Attachment {//File Metadata
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
