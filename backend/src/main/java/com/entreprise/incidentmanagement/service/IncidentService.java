@@ -4,8 +4,11 @@ import com.entreprise.incidentmanagement.domain.Application;
 import com.entreprise.incidentmanagement.domain.Attachment;
 import com.entreprise.incidentmanagement.domain.Incident;
 import com.entreprise.incidentmanagement.domain.IncidentStatus;
+import com.entreprise.incidentmanagement.domain.Notification;
+import com.entreprise.incidentmanagement.domain.NotificationType;
 import com.entreprise.incidentmanagement.domain.User;
 import com.entreprise.incidentmanagement.dto.ClientRequest;
+import com.entreprise.incidentmanagement.dto.NotificationDto;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.dto.IncidentDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
@@ -30,6 +33,7 @@ public class IncidentService {
     private final ApplicationRepository applicationRepository;
     private final UserRepository userRepository;
     private final FileStorageServiceInterface fileStorageService;
+    private final NotificationService notificationService;
 
     private final id_generator idGenerator;
 
@@ -145,11 +149,34 @@ public class IncidentService {
                 }
             }
             savedIncident.setAttachments(storedAttachments);
+            NotificationDto notificationDto = buildClientIncidentNotification(savedIncident, createdBy);
+            NotificationDto savedNotification = notificationService.saveDto(notificationDto);
+            notificationService.sendMailNotification(savedNotification, "aymanemwa@gmail.com");
             return DomainDtoMapper.toDto(savedIncident);
         } catch (IOException | RuntimeException ex) {
             fileStorageService.cleanupStoredFiles(storedAttachments);
             throw new RuntimeException("Unable to save client incident", ex);
         }
+    }
+
+    private NotificationDto buildClientIncidentNotification(Incident savedIncident, User createdBy) {
+        if (createdBy.getEmail() == null || createdBy.getEmail().isBlank()) {
+            throw new IllegalArgumentException("Created by user email is required");
+        }
+
+        String reference = savedIncident.getReference() == null ? "" : savedIncident.getReference();
+        String applicationName = savedIncident.getApplication() != null && savedIncident.getApplication().getName() != null
+                ? savedIncident.getApplication().getName()
+                : "application";
+
+        Notification notification = Notification.builder()
+                .recipient(createdBy)
+                .incident(savedIncident)
+                .type(NotificationType.NOUVEL_INCIDENT)
+                .message("Un nouvel Incident " + reference + " a ete enregistre pour " + applicationName + ".")
+                .build();
+
+        return DomainDtoMapper.toDto(notification);
     }
 
     private String buildClientIncidentName(Application application, String description) {

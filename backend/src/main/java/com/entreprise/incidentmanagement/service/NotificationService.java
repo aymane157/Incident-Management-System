@@ -8,6 +8,8 @@ import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.repository.NotificationRepository;
 import com.entreprise.incidentmanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -17,14 +19,22 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
-    private final JavaMailSender mailSender;
+    private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
     public NotificationDto sendMailNotification(NotificationDto notificationDto,String toEmail) {
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+        if (mailSender == null) {
+            log.warn("Mail sender is not configured, skipping notification email for incident {}",
+                    notificationDto.getIncident() != null ? notificationDto.getIncident().getReference() : null);
+            return notificationDto;
+        }
+
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setFrom("IncidentSystem");
         mailMessage.setSubject(notificationDto.getType().name() +"Incident:"+notificationDto.getIncident().getReference());
