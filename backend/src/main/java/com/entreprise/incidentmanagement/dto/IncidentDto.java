@@ -23,6 +23,7 @@ public class IncidentDto {
     private IncidentStatus status;
     private IncidentLevel incidentLevel;
     private ApplicationDto application;
+    private UserDto createdBy;
     private UserDto incidentManager;
     private TeamDto assignedTeam;
     private UserDto handledBy;

@@ -20,7 +20,7 @@ public class Incident {
     private Long id;
 
 
-    private String Reference;
+    private String reference;
 
     @Column(nullable = false)
     private String name;
@@ -39,6 +39,10 @@ public class Incident {
     private Application application;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by_id")
+    private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "incident_manager_id")
     private User incidentManager;
 
@@ -55,7 +59,9 @@ public class Incident {
 
     @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Attachment> attachments = new ArrayList<>();  //screenshots
+    private List<Attachment> attachments = new ArrayList<>();  //screenshots metadata for each
+
+
 
     @OneToOne(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     private RcaReport rcaReport;

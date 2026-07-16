@@ -1,23 +1,35 @@
 package com.entreprise.incidentmanagement.service;
 
+import com.entreprise.incidentmanagement.domain.Application;
+import com.entreprise.incidentmanagement.domain.Attachment;
 import com.entreprise.incidentmanagement.domain.Incident;
 import com.entreprise.incidentmanagement.domain.IncidentStatus;
+import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.ClientRequest;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.dto.IncidentDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
+import com.entreprise.incidentmanagement.repository.ApplicationRepository;
 import com.entreprise.incidentmanagement.repository.IncidentRepository;
+import com.entreprise.incidentmanagement.repository.UserRepository;
 import com.entreprise.incidentmanagement.utils.id_generator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
 public class IncidentService {
     private final IncidentRepository incidentRepository;
+    private final ApplicationRepository applicationRepository;
+    private final UserRepository userRepository;
+    private final FileStorageServiceInterface fileStorageService;
 
     private final id_generator idGenerator;
 
@@ -53,9 +65,7 @@ public class IncidentService {
 
     @Transactional
     public Incident save(Incident incident) {
-
-            incident.setReference(idGenerator.generate());
-
+        incident.setReference(idGenerator.generate());
         return incidentRepository.save(incident);
     }
 
@@ -87,5 +97,69 @@ public class IncidentService {
             throw new ResourceNotFoundException("This incident does not exist");
         }
         incidentRepository.deleteById(id);
+    }
+
+    @Transactional
+    public IncidentDto clientSave(ClientRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Client request is required");
+        }
+        if (request.description() == null || request.description().isBlank()) {
+            throw new IllegalArgumentException("Description is required");
+        }
+        if (request.applicationId() == null) {
+            throw new IllegalArgumentException("Application id is required");
+        }
+        if (request.createdById() == null) {
+            throw new IllegalArgumentException("Created by user id is required");
+        }
+
+        Application application = applicationRepository.findById(request.applicationId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Application not found with id " + request.applicationId()
+                ));
+
+        User createdBy = userRepository.findById(request.createdById())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found with id " + request.createdById()
+                ));
+
+        Incident incident = Incident.builder()
+                .name(buildClientIncidentName(application, request.description()))
+                .description(request.description())
+                .status(IncidentStatus.NOUVEAU)
+                .application(application)
+                .createdBy(createdBy)
+                .build();
+
+        Incident savedIncident = save(incident);
+        List<Attachment> storedAttachments = new ArrayList<>();
+
+        try {
+            if (request.attachments() != null) {
+                for (MultipartFile file : request.attachments()) {
+                    if (file == null || file.isEmpty()) {
+                        continue;
+                    }
+                    storedAttachments.add(fileStorageService.store(file, savedIncident));
+                }
+            }
+            savedIncident.setAttachments(storedAttachments);
+            return DomainDtoMapper.toDto(savedIncident);
+        } catch (IOException | RuntimeException ex) {
+            fileStorageService.cleanupStoredFiles(storedAttachments);
+            throw new RuntimeException("Unable to save client incident", ex);
+        }
+    }
+
+    private String buildClientIncidentName(Application application, String description) {
+        String appName = application.getName() == null || application.getName().isBlank()
+                ? "application"
+                : application.getName();
+        String shortDescription = description.trim();
+        if (shortDescription.length() > 80) {
+            shortDescription = shortDescription.substring(0, 80).trim();
+        }
+        return "Client incident - " + appName + " - " + shortDescription;
     }
 }
