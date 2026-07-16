@@ -8,6 +8,8 @@ import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.repository.NotificationRepository;
 import com.entreprise.incidentmanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,20 @@ import java.util.Optional;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+
+    private final JavaMailSender mailSender;
+
+    public NotificationDto sendMailNotification(NotificationDto notificationDto,String toEmail) {
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+        mailMessage.setFrom("IncidentSystem");
+        mailMessage.setSubject(notificationDto.getType().name() +"Incident:"+notificationDto.getIncident().getReference());
+        mailMessage.setText(notificationDto.getMessage());
+        mailMessage.setTo(toEmail);
+
+        mailSender.send(mailMessage);
+
+        return notificationDto;
+    }
 
     @Transactional(readOnly = true)
     public List<Notification> findAll() {
