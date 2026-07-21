@@ -1,12 +1,6 @@
 package com.entreprise.incidentmanagement.service;
 
-import com.entreprise.incidentmanagement.domain.Application;
-import com.entreprise.incidentmanagement.domain.Attachment;
-import com.entreprise.incidentmanagement.domain.Incident;
-import com.entreprise.incidentmanagement.domain.IncidentStatus;
-import com.entreprise.incidentmanagement.domain.Notification;
-import com.entreprise.incidentmanagement.domain.NotificationType;
-import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.domain.*;
 import com.entreprise.incidentmanagement.dto.ClientRequest;
 import com.entreprise.incidentmanagement.dto.NotificationDto;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
@@ -14,6 +8,7 @@ import com.entreprise.incidentmanagement.dto.IncidentDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
 import com.entreprise.incidentmanagement.repository.ApplicationRepository;
 import com.entreprise.incidentmanagement.repository.IncidentRepository;
+import com.entreprise.incidentmanagement.repository.TeamRepository;
 import com.entreprise.incidentmanagement.repository.UserRepository;
 import com.entreprise.incidentmanagement.utils.id_generator;
 import lombok.RequiredArgsConstructor;
@@ -22,20 +17,25 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
+
+import static org.springframework.data.jpa.domain.AbstractAuditable_.createdBy;
 
 @Service
 @RequiredArgsConstructor
 public class IncidentService {
     private final IncidentRepository incidentRepository;
     private final ApplicationRepository applicationRepository;
+    private final TeamRepository teamRepository;
     private final UserRepository userRepository;
     private final FileStorageServiceInterface fileStorageService;
     private final NotificationService notificationService;
 
     private final id_generator idGenerator;
+    private final UserService userService;
 
     @Transactional(readOnly = true)
     public List<Incident> findAll() {
@@ -67,6 +67,11 @@ public class IncidentService {
         return findByStatus(status).stream().map(DomainDtoMapper::toDto).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<IncidentDto> findByIncidentManagerIdDto(Long incidentManagerId) {
+        return incidentRepository.findByIncidentManager_Id(incidentManagerId).stream().map(DomainDtoMapper::toDto).toList();
+    }
+
     @Transactional
     public Incident save(Incident incident) {
         incident.setReference(idGenerator.generate());
@@ -80,18 +85,40 @@ public class IncidentService {
     }
 
     @Transactional
-    public IncidentDto updateDto(Long id, IncidentDto incidentDto) {
+    public IncidentDto updateDto( IncidentDto incidentDto) {
         Incident existing = incidentRepository.findByReference(incidentDto.getReference()) //since ref is unique
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Incident not found with reference: " + incidentDto.getReference()
                 ));
         Incident updated = DomainDtoMapper.toEntity(incidentDto);
-        updated.setId(existing.getId());
+       updated.setId(existing.getId());
         updated.setReference(existing.getReference());
         updated.setStatus(existing.getStatus());
+        updated.setApplication(existing.getApplication());
+        updated.setIncidentManager(existing.getIncidentManager());
         updated.setName(existing.getName());
+        updated.setCreatedBy(existing.getCreatedBy());
         updated.setDescription(existing.getDescription());
+        updated.setIncidentLevel(existing.getIncidentLevel());
+        if (incidentDto.getAssignedTeam() != null) {
+            Team assignedTeam = teamRepository.findById(incidentDto.getAssignedTeam().getId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Team not found with id " + incidentDto.getAssignedTeam().getId()
+                    ));
+            updated.setAssignedTeam(assignedTeam);
+            updated.setSlaDeadline(calculateSla(incidentDto.getIncidentLevel()));
+            NotificationDto notificationDto = buildClientIncidentNotification(updated,updated.getCreatedBy() );
+            NotificationDto savedNotification = notificationService.saveDto(notificationDto);
+            notificationService.sendMailNotification(savedNotification, "aymanemwa2@gmail.com");
+        } else {
+            updated.setAssignedTeam(existing.getAssignedTeam());
+        }
 
+        if (incidentDto.getAssignedTeam() != null && existing.getAssignedTeam() == null) {
+            updated.setAssignedAt(LocalDateTime.now());
+        } else {
+            updated.setAssignedAt(existing.getAssignedAt());
+        }
         return DomainDtoMapper.toDto(incidentRepository.save(updated));
     }
 
@@ -122,7 +149,9 @@ public class IncidentService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Application not found with id " + request.applicationId()
                 ));
-
+        User incidentManager=userService.fetchIncidentManager()
+                .orElseThrow(() -> new ResourceNotFoundException("Incident manager not found"));
+                ;
         User createdBy = userRepository.findById(request.createdById())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with id " + request.createdById()
@@ -131,9 +160,11 @@ public class IncidentService {
         Incident incident = Incident.builder()
                 .name(buildClientIncidentName(application, request.description()))
                 .description(request.description())
-                .status(IncidentStatus.NOUVEAU)
+                .status(IncidentStatus.NEW)
                 .application(application)
                 .createdBy(createdBy)
+                .incidentLevel(request.incidentLevel())
+                .incidentManager(incidentManager)
                 .build();
 
         Incident savedIncident = save(incident);
@@ -158,6 +189,7 @@ public class IncidentService {
             throw new RuntimeException("Unable to save client incident", ex);
         }
     }
+
 
     private NotificationDto buildClientIncidentNotification(Incident savedIncident, User createdBy) {
         if (createdBy.getEmail() == null || createdBy.getEmail().isBlank()) {
@@ -188,5 +220,16 @@ public class IncidentService {
             shortDescription = shortDescription.substring(0, 80).trim();
         }
         return "Client incident - " + appName + " - " + shortDescription;
+    }
+    private LocalDateTime calculateSla(IncidentLevel level) {
+        if(level==null){
+            throw new NullPointerException("level is null");
+        }
+        return switch (level) {
+            case CRITICAL -> LocalDateTime.now().plusHours(4);
+            case HIGH -> LocalDateTime.now().plusHours(6);
+            case MEDIUM -> LocalDateTime.now().plusHours(8);
+            case LOW -> LocalDateTime.now().plusHours(24);
+        };
     }
 }

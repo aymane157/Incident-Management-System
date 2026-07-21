@@ -37,10 +37,14 @@ public class NotificationService {
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setFrom("IncidentSystem");
-        mailMessage.setSubject(notificationDto.getType().name() +"Incident:"+notificationDto.getIncident().getReference());
+        if(notificationDto.getIncident().getSlaDeadline() != null) {
+            mailMessage.setSubject(notificationDto.getType().name() + "Incident:" + notificationDto.getIncident().getReference() +"With Deadline" +notificationDto.getIncident().getSlaDeadline() +"And Criticality"+notificationDto.getIncident().getIncidentLevel());
+        }else{
+            mailMessage.setSubject(notificationDto.getType().name() + "Incident:" + notificationDto.getIncident().getReference());
+        }
         mailMessage.setText(notificationDto.getMessage());
         mailMessage.setTo(toEmail);
-
+        log.info("Sending email to {}", toEmail);
         mailSender.send(mailMessage);
 
         return notificationDto;

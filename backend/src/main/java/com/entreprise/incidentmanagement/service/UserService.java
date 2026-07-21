@@ -1,5 +1,6 @@
 package com.entreprise.incidentmanagement.service;
 
+import com.entreprise.incidentmanagement.domain.Role;
 import com.entreprise.incidentmanagement.domain.User;
 import com.entreprise.incidentmanagement.dto.UserDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
@@ -68,5 +69,10 @@ public class UserService {
     @Transactional
     public void deleteById(Long id) {
         userRepository.deleteById(id);
+    }
+
+    public Optional<User> fetchIncidentManager() {
+        Optional<User> user = userRepository.findByRole(Role.INCIDENT_MANAGER);
+        return user;
     }
 }
