@@ -1,10 +1,10 @@
 package com.entreprise.incidentmanagement.domain;
 
 public enum IncidentStatus {
-    NOUVEAU,
+    NEW,
     REJETE,
-    VALIDE,
-    EN_COURS,
-    RESOLU,
-    CLOTURE
+    VALIDATED,
+    IN_PROGRESS,
+    RESOLVED,
+    CLOSED
 }

@@ -1,13 +1,26 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { AlertCircle, ArrowLeft, Loader2, Paperclip, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { createClientIncident, fetchApplications, type ApplicationOption } from '../lib/api';
+import {
+  createClientIncident,
+  fetchApplications,
+  type ApplicationOption,
+  type IncidentLevel,
+} from '../lib/api';
+
+const levelOptions: Array<{ value: IncidentLevel; label: string; description: string }> = [
+  { value: 'CRITICAL', label: 'Critique', description: 'Service indisponible ou impact majeur' },
+  { value: 'HIGH', label: 'Haute', description: 'Impact important sur le métier' },
+  { value: 'MEDIUM', label: 'Moyenne', description: 'Impact limité avec contournement possible' },
+  { value: 'LOW', label: 'Basse', description: 'Demande mineure ou faible impact' },
+];
 
 export default function CreateIncident() {
   const navigate = useNavigate();
   const staticClientUserId = 2;
   const [applications, setApplications] = useState<ApplicationOption[]>([]);
   const [applicationId, setApplicationId] = useState('');
+  const [incidentLevel, setIncidentLevel] = useState<IncidentLevel | ''>('');
   const [description, setDescription] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [loadingApplications, setLoadingApplications] = useState(true);
@@ -65,10 +78,16 @@ export default function CreateIncident() {
       return;
     }
 
+    if (!incidentLevel) {
+      setError('Veuillez sélectionner une criticité.');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('description', description.trim());
     formData.append('applicationId', applicationId);
     formData.append('createdById', String(staticClientUserId));
+    formData.append('incidentLevel', incidentLevel);
     attachments.forEach((file) => formData.append('attachments', file));
 
     setSubmitting(true);
@@ -79,6 +98,7 @@ export default function CreateIncident() {
         `Ticket créé avec succès${incident?.reference ? ` : ${incident.reference}` : ''}.`
       );
       setDescription('');
+      setIncidentLevel('');
       setAttachments([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'La création du ticket a échoué.');
@@ -183,6 +203,47 @@ export default function CreateIncident() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-gray-700">
+                    Criticité <span className="text-danger">*</span>
+                  </label>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {levelOptions.map((option) => {
+                      const selected = incidentLevel === option.value;
+
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setIncidentLevel(option.value)}
+                          className={`rounded-xl border-2 p-3 text-left transition-all ${
+                            selected
+                              ? 'border-primary bg-primary/5 text-primary shadow-sm'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                          disabled={submitting}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-semibold">{option.label}</span>
+                            <span
+                              className={`h-2.5 w-2.5 rounded-full ${
+                                option.value === 'CRITICAL'
+                                  ? 'bg-danger'
+                                  : option.value === 'HIGH'
+                                    ? 'bg-warning'
+                                    : option.value === 'MEDIUM'
+                                      ? 'bg-secondary'
+                                      : 'bg-success'
+                              }`}
+                            />
+                          </div>
+                          <p className="mt-1 text-xs leading-relaxed opacity-80">{option.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

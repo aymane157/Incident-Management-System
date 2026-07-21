@@ -111,7 +111,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
                 jean,
                 marie,
                 IncidentLevel.HIGH,
-                IncidentStatus.EN_COURS,
+                IncidentStatus.IN_PROGRESS,
                 "Support Applicatif"
         );
 
@@ -122,7 +122,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
                 jean,
                 marie,
                 IncidentLevel.CRITICAL,
-                IncidentStatus.RESOLU,
+                IncidentStatus.RESOLVED,
                 "Support Base de Donnee"
         );
 
@@ -152,7 +152,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
                 jean,
                 amina,
                 IncidentLevel.MEDIUM,
-                IncidentStatus.VALIDE,
+                IncidentStatus.VALIDATED,
                 "Support Reseau"
         );
 
@@ -163,7 +163,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
                 jean,
                 marie,
                 IncidentLevel.LOW,
-                IncidentStatus.NOUVEAU,
+                IncidentStatus.NEW,
                 "Support Applicatif"
         );
 
@@ -431,7 +431,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
         rcaReportRepository.save(report);
 
         incident.setIncidentLevel(IncidentLevel.CRITICAL);
-        incident.setStatus(IncidentStatus.CLOTURE);
+        incident.setStatus(IncidentStatus.CLOSED);
         incident.setResolvedAt(LocalDateTime.now().minusHours(4));
         incident.setClosedAt(LocalDateTime.now());
         incidentRepository.save(incident);

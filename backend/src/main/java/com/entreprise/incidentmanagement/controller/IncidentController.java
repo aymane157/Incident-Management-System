@@ -43,6 +43,11 @@ public class IncidentController {
         return incidentService.findByStatusDto(status);
     }
 
+    @GetMapping("/manager/{managerId}")
+    public List<IncidentDto> findByManager(@PathVariable Long managerId) {
+        return incidentService.findByIncidentManagerIdDto(managerId);
+    }
+
     @PostMapping
     public ResponseEntity<IncidentDto> create(@RequestBody IncidentDto incidentDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(incidentService.saveDto(incidentDto));
@@ -55,7 +60,7 @@ public class IncidentController {
 
     @PutMapping("/{id}")
     public IncidentDto update(@PathVariable Long id, @RequestBody IncidentDto incidentDto) {
-        return incidentService.updateDto(id, incidentDto);
+        return incidentService.updateDto(incidentDto);
     }
 
     @DeleteMapping("/{id}")
