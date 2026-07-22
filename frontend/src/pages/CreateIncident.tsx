@@ -15,6 +15,10 @@ const levelOptions: Array<{ value: IncidentLevel; label: string; description: st
   { value: 'LOW', label: 'Basse', description: 'Demande mineure ou faible impact' },
 ];
 
+function fileKey(file: File) {
+  return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
 export default function CreateIncident() {
   const navigate = useNavigate();
   const staticClientUserId = 2;
@@ -23,6 +27,7 @@ export default function CreateIncident() {
   const [incidentLevel, setIncidentLevel] = useState<IncidentLevel | ''>('');
   const [description, setDescription] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
   const [loadingApplications, setLoadingApplications] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -62,6 +67,65 @@ export default function CreateIncident() {
     () => applications.find((application) => String(application.id) === applicationId),
     [applications, applicationId]
   );
+
+  function handleFilesSelected(nextFiles: FileList | null) {
+    if (!nextFiles || nextFiles.length === 0) return;
+
+    // Snapshot into a plain array right away — FileList is live and tied to
+    // the input element, so if we hold onto the FileList itself inside the
+    // setAttachments updater, resetting event.target.value afterwards wipes
+    // it out before the updater actually runs.
+    const filesSnapshot = Array.from(nextFiles);
+
+    setAttachments((current) => {
+      const combined = [...current];
+
+      for (const file of filesSnapshot) {
+        const isDuplicate = combined.some(
+          (existing) =>
+            existing.name === file.name &&
+            existing.size === file.size &&
+            existing.lastModified === file.lastModified
+        );
+
+        if (!isDuplicate) {
+          combined.push(file);
+        }
+      }
+
+      return combined;
+    });
+  }
+
+  // Generate/revoke object URLs for image previews whenever the attachment
+  // list changes.
+  useEffect(() => {
+    setPreviewUrls((current) => {
+      const next: Record<string, string> = {};
+
+      attachments.forEach((file) => {
+        if (file.type.startsWith('image/')) {
+          const key = fileKey(file);
+          next[key] = current[key] ?? URL.createObjectURL(file);
+        }
+      });
+
+      Object.entries(current).forEach(([key, url]) => {
+        if (!next[key]) URL.revokeObjectURL(url);
+      });
+
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attachments]);
+
+  // Revoke all remaining object URLs on unmount.
+  useEffect(() => {
+    return () => {
+      Object.values(previewUrls).forEach((url) => URL.revokeObjectURL(url));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -120,7 +184,7 @@ export default function CreateIncident() {
         <div className="text-xs text-gray-400 mt-2 ml-6">Accueil &gt; Nouveau ticket</div>
       </div>
 
-      <div className="flex-1 flex px-12 py-4 gap-12">
+    <div className="flex-1 flex min-h-0 overflow-hidden px-12 py-4 gap-12">
         <div className="w-48 space-y-6 pt-4">
           <div className="flex items-center space-x-3 text-primary">
             <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">
@@ -179,7 +243,7 @@ export default function CreateIncident() {
               <div className="flex-1 space-y-6">
                 <div>
                   <label className="text-xs font-medium text-gray-500 block mb-1">
-                    ID du ticket (généré automatiquement)
+                  Exemple:  ID du ticket (généré automatiquement)
                   </label>
                   <div className="font-bold text-gray-900">2026-06-23-1</div>
                 </div>
@@ -251,21 +315,7 @@ export default function CreateIncident() {
                     Description <span className="text-danger">*</span>
                   </label>
                   <div className="border border-gray-200 rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors">
-                    <div className="bg-gray-50 border-b border-gray-200 p-2 flex space-x-2">
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded font-bold text-gray-600 text-sm">
-                        B
-                      </button>
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded italic text-gray-600 text-sm">
-                        I
-                      </button>
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded underline text-gray-600 text-sm">
-                        U
-                      </button>
-                      <div className="w-px h-4 bg-gray-300 my-auto mx-1" />
-                      <button type="button" className="p-1 hover:bg-gray-200 rounded text-gray-600">
-                        <Paperclip className="w-4 h-4" />
-                      </button>
-                    </div>
+                    
                     <textarea
                       rows={6}
                       placeholder="Décrivez votre problème en détail..."
@@ -283,7 +333,7 @@ export default function CreateIncident() {
               </div>
 
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Capture d'écran</label>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Pièces jointes</label>
                 <label className="border-2 border-dashed border-gray-200 rounded-2xl h-48 flex flex-col items-center justify-center bg-gray-50 hover:bg-primary/5 hover:border-primary/30 transition-colors cursor-pointer group">
                   <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 text-primary">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -302,21 +352,64 @@ export default function CreateIncident() {
                     type="file"
                     className="hidden"
                     multiple
-                    accept="image/png,image/jpeg,image/gif"
-                    onChange={(event) => setAttachments(Array.from(event.target.files ?? []))}
+                    accept=".png,.jpg,.jpeg,.gif,.webp,.pdf,.doc,.docx,.docm,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(event) => {
+                      handleFilesSelected(event.target.files);
+                      event.target.value = '';
+                    }}
                     disabled={submitting}
                   />
                 </label>
                 <p className="text-xs text-gray-400 text-center mt-3">
-                  Formats acceptés : PNG, JPG, GIF (max. 5 Mo)
+                  Formats acceptés : PNG, JPG, GIF, WEBP, PDF, DOC, DOCX (max. 5 Mo par fichier)
                 </p>
                 {attachments.length > 0 ? (
                   <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
-                    <p className="font-semibold text-gray-700 mb-2">Fichiers sélectionnés</p>
-                    <ul className="space-y-1">
-                      {attachments.map((file) => (
-                        <li key={`${file.name}-${file.size}`}>{file.name}</li>
-                      ))}
+                    <p className="font-semibold text-gray-700 mb-2">
+                      Fichiers sélectionnés ({attachments.length})
+                    </p>
+                    <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {attachments.map((file) => {
+                        const key = fileKey(file);
+                        const previewUrl = previewUrls[key];
+
+                        return (
+                          <li
+                            key={key}
+                            className="flex items-center gap-3 rounded-lg bg-white px-3 py-2 border border-gray-100"
+                          >
+                            {previewUrl ? (
+                              <img
+                                src={previewUrl}
+                                alt={file.name}
+                                className="h-10 w-10 shrink-0 rounded-md object-cover border border-gray-100"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 shrink-0 rounded-md bg-gray-100 flex items-center justify-center text-[10px] font-semibold text-gray-400">
+                                {(file.name.split('.').pop() || 'FILE').slice(0, 4).toUpperCase()}
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium text-gray-700">{file.name}</p>
+                              <p className="text-[11px] text-gray-400">
+                                {file.type || 'type inconnu'} · {Math.round(file.size / 1024)} KB
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className="shrink-0 text-xs font-semibold text-danger hover:underline"
+                              onClick={() =>
+                                setAttachments((current) =>
+                                  current.filter((existing) => fileKey(existing) !== key)
+                                )
+                              }
+                              disabled={submitting}
+                            >
+                              Supprimer
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </div>
                 ) : null}
