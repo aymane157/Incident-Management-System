@@ -48,6 +48,16 @@ public class IncidentController {
         return incidentService.findByIncidentManagerIdDto(managerId);
     }
 
+    @GetMapping("/team/{teamId}")
+    public List<IncidentDto> findByTeam(@PathVariable Long teamId) {
+        return incidentService.findByAssignedTeamIdDto(teamId);
+    }
+
+    @PostMapping("/{id}/claim/{userId}")
+    public IncidentDto claimIncident(@PathVariable Long id, @PathVariable Long userId) {
+        return incidentService.claimIncident(id, userId);
+    }
+
     @PostMapping
     public ResponseEntity<IncidentDto> create(@RequestBody IncidentDto incidentDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(incidentService.saveDto(incidentDto));
@@ -70,5 +80,12 @@ public class IncidentController {
         }
         incidentService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+
+    @GetMapping("/FindNewIncident/{referenceId}")//for Mailing link
+    public ResponseEntity<IncidentDto> findNewIncident(@PathVariable String referenceId) {
+        IncidentDto incidient=incidentService.getIncidentByReference(referenceId);
+        return ResponseEntity.ok(incidient);
     }
 }

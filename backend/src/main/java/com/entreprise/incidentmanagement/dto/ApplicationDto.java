@@ -13,6 +13,7 @@ public class ApplicationDto {
     private Long id;
     private String name;
     private String description;
+    private UserDto clientUser;
     private TeamDto appTeam;
     private TeamDto systemTeam;
     private TeamDto databaseTeam;

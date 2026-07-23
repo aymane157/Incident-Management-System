@@ -14,6 +14,9 @@ export type UserDto = {
   firstName?: string | null;
   lastName?: string | null;
   email?: string | null;
+  teamId?: number | null;
+  teamName?: string | null;
+  teamFunctionRole?: string | null;
 };
 
 export type TeamDto = {
@@ -28,6 +31,19 @@ export type AttachmentDto = {
   contentType?: string | null;
   fileSize?: number | null;
   uploadedAt?: string | null;
+};
+
+export type RcaReportDto = {
+  id: number;
+  incident?: IncidentDto | null;
+  author?: UserDto | null;
+  rootCause?: string | null;
+  solution?: string | null;
+  preventiveMeasures?: string | null;
+  validatedByManager?: boolean;
+  validatedBy?: UserDto | null;
+  createdAt?: string | null;
+  validatedAt?: string | null;
 };
 
 export type IncidentDto = {
@@ -70,8 +86,9 @@ async function parseError(response: Response): Promise<string> {
   return text.trim() || `Request failed with status ${response.status}`;
 }
 
-export async function fetchApplications(): Promise<ApplicationOption[]> {
-  const response = await fetch(`${API_BASE_URL}/applications`);
+export async function fetchApplications(clientUserId?: number): Promise<ApplicationOption[]> {
+  const url = clientUserId ? `${API_BASE_URL}/applications/client/${clientUserId}` : `${API_BASE_URL}/applications`;
+  const response = await fetch(url);
 
   if (!response.ok) {
     throw new Error(await parseError(response));
@@ -110,6 +127,46 @@ export async function fetchManagerIncidents(managerId: number = STATIC_INCIDENT_
   return response.json();
 }
 
+export async function fetchUserById(userId: number): Promise<UserDto> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`);
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchTeamById(teamId: number): Promise<TeamDto> {
+  const response = await fetch(`${API_BASE_URL}/teams/${teamId}`);
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchTeamIncidents(teamId: number): Promise<IncidentDto[]> {
+  const response = await fetch(`${API_BASE_URL}/incidents/team/${teamId}`);
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchNewIncident(referenceId: string): Promise<IncidentDto> {
+  const response = await fetch(`${API_BASE_URL}/incidents/FindNewIncident/${encodeURIComponent(referenceId)}`);
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
 export async function updateIncident(id: number, incident: IncidentDto): Promise<IncidentDto> {
   const response = await fetch(`${API_BASE_URL}/incidents/${id}`, {
     method: 'PUT',
@@ -117,6 +174,18 @@ export async function updateIncident(id: number, incident: IncidentDto): Promise
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(incident),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function claimIncident(incidentId: number, userId: number): Promise<IncidentDto> {
+  const response = await fetch(`${API_BASE_URL}/incidents/${incidentId}/claim/${userId}`, {
+    method: 'POST',
   });
 
   if (!response.ok) {
@@ -134,6 +203,36 @@ export async function createClientIncident(formData: FormData) {
   const response = await fetch(`${API_BASE_URL}/incidents/client`, {
     method: 'POST',
     body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchRcaReportByIncident(incidentId: number): Promise<RcaReportDto | null> {
+  const response = await fetch(`${API_BASE_URL}/rca-reports/incident/${incidentId}`);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function createRcaReport(report: Record<string, unknown>): Promise<RcaReportDto> {
+  const response = await fetch(`${API_BASE_URL}/rca-reports`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(report),
   });
 
   if (!response.ok) {

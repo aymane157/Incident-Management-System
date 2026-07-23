@@ -28,6 +28,11 @@ public class ApplicationController {
         return applicationService.findAllDto();
     }
 
+    @GetMapping("/client/{clientUserId}")
+    public List<ApplicationDto> findByClientUser(@PathVariable Long clientUserId) {
+        return applicationService.findByClientUserIdDto(clientUserId);
+    }
+
     @GetMapping("/{id}")
     public ApplicationDto findById(@PathVariable Long id) {
         return applicationService.findByIdDto(id)

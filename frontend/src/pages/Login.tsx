@@ -5,6 +5,7 @@ import { useAuth, UserRole } from '../lib/auth';
 
 const roles: {
   id: UserRole;
+  userId: number;
   label: string;
   sublabel: string;
   icon: React.ElementType;
@@ -13,6 +14,7 @@ const roles: {
 }[] = [
   {
     id: 'client',
+    userId: 2,
     label: 'Client',
     sublabel: 'Déclarez & suivez\nvos incidents',
     icon: Users,
@@ -21,6 +23,7 @@ const roles: {
   },
   {
     id: 'manager',
+    userId: 3,
     label: 'Incident Manager',
     sublabel: 'Gérez & pilotez\nles incidents',
     icon: Shield,
@@ -29,6 +32,7 @@ const roles: {
   },
   {
     id: 'admin',
+    userId: 1,
     label: 'Administrateur',
     sublabel: 'Gérez les utilisateurs\n& la configuration',
     icon: Settings,
@@ -37,8 +41,9 @@ const roles: {
   },
   {
     id: 'rt',
-    label: 'Resp. de Traitement',
-    sublabel: 'Résolvez & rapportez\nles incidents assignés',
+    userId: 4,
+    label: "Membre d'équipe",
+    sublabel: 'Prenez en charge\nles incidents de votre équipe',
     icon: Wrench,
     homeRoute: '/rt/home',
     mockName: 'Thomas Bernard',
@@ -56,7 +61,7 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    login({ name: selected.mockName, email: email || `${role}@dxc.com`, role });
+    login({ id: selected.userId, name: selected.mockName, email: email || `${role}@dxc.com`, role });
     navigate(selected.homeRoute);
   };
 

@@ -72,6 +72,37 @@ public class IncidentService {
         return incidentRepository.findByIncidentManager_Id(incidentManagerId).stream().map(DomainDtoMapper::toDto).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<IncidentDto> findByAssignedTeamIdDto(Long teamId) {
+        return incidentRepository.findByAssignedTeam_Id(teamId).stream().map(DomainDtoMapper::toDto).toList();
+    }
+
+    @Transactional
+    public IncidentDto claimIncident(Long incidentId, Long userId) {
+        Incident incident = incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with id " + incidentId));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + userId));
+        if (user.getTeam() == null) {
+            throw new IllegalArgumentException("User is not assigned to a team");
+        }
+        if (incident.getAssignedTeam() != null
+                && incident.getAssignedTeam().getId() != null
+                && !incident.getAssignedTeam().getId().equals(user.getTeam().getId())) {
+            throw new IllegalArgumentException("Incident is not assigned to the user's team");
+        }
+
+        incident.setHandledBy(user);
+        if (incident.getStatus() == IncidentStatus.NEW || incident.getStatus() == IncidentStatus.VALIDATED) {
+            incident.setStatus(IncidentStatus.IN_PROGRESS);
+        }
+        if (incident.getAssignedAt() == null) {
+            incident.setAssignedAt(LocalDateTime.now());
+        }
+
+        return DomainDtoMapper.toDto(incidentRepository.save(incident));
+    }
+
     @Transactional
     public Incident save(Incident incident) {
         incident.setReference(idGenerator.generate());
@@ -120,6 +151,12 @@ public class IncidentService {
             updated.setAssignedAt(existing.getAssignedAt());
         }
         return DomainDtoMapper.toDto(incidentRepository.save(updated));
+    }
+
+    public IncidentDto getIncidentByReference(String reference) {
+        Incident incident=incidentRepository.findByReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found with reference: " + reference));
+        return DomainDtoMapper.toDto(incident);
     }
 
     @Transactional
