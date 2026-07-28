@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
@@ -262,6 +264,7 @@ public class IncidentService {
         if(level==null){
             throw new NullPointerException("level is null");
         }
+
         return switch (level) {
             case CRITICAL -> LocalDateTime.now().plusHours(4);
             case HIGH -> LocalDateTime.now().plusHours(6);
@@ -269,4 +272,5 @@ public class IncidentService {
             case LOW -> LocalDateTime.now().plusHours(24);
         };
     }
+
 }
