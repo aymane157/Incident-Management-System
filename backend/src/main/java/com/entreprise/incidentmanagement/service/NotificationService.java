@@ -8,6 +8,7 @@ import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.repository.NotificationRepository;
 import com.entreprise.incidentmanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.SimpleMailMessage;
@@ -25,6 +26,9 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
+    @Value("${app-frontend}")
+    private String frontend;
+
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
     public NotificationDto sendMailNotification(NotificationDto notificationDto,String toEmail) {
@@ -38,11 +42,17 @@ public class NotificationService {
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setFrom("IncidentSystem");
         if(notificationDto.getIncident().getSlaDeadline() != null) {
-            mailMessage.setSubject(notificationDto.getType().name() + "Incident:" + notificationDto.getIncident().getReference() +"With Deadline" +notificationDto.getIncident().getSlaDeadline() +"And Criticality"+notificationDto.getIncident().getIncidentLevel());
+            mailMessage.setSubject(notificationDto.getType().name() +" "+ "Incident:" + notificationDto.getIncident().getReference() +"With Deadline" +notificationDto.getIncident().getSlaDeadline() +"And Criticality"+notificationDto.getIncident().getIncidentLevel());
         }else{
             mailMessage.setSubject(notificationDto.getType().name() + "Incident:" + notificationDto.getIncident().getReference());
         }
-        mailMessage.setText(notificationDto.getMessage());
+        String message = notificationDto.getMessage()
+                + "\n\n"
+                + "View incident: "
+                + frontend
+                + "/incidents/"
+                + notificationDto.getIncident().getReference();
+        mailMessage.setText(message);
         mailMessage.setTo(toEmail);
         log.info("Sending email to {}", toEmail);
         mailSender.send(mailMessage);

@@ -62,8 +62,8 @@ const roleConfig: Record<
     BadgeIcon: Settings,
   },
   rt: {
-    label: 'Resp. de Traitement',
-    badge: 'RESP. TRAITEMENT',
+    label: "Membre d'équipe",
+    badge: 'MEMBRE EQUIPE',
     badgeColor: 'bg-warning/20 text-warning',
     avatarBg: 'bg-warning',
     nav: rtNav,

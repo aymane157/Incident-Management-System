@@ -12,10 +12,8 @@ import {
   Search,
   ShieldCheck,
   X,
-  Users,
 } from 'lucide-react';
 import {
-  getAttachmentUrl,
   fetchManagerIncidents,
   fetchTeams,
   IncidentDto,
@@ -30,11 +28,11 @@ type MainTab = 'new' | 'all';
 
 const statusLabel: Record<IncidentStatus, string> = {
   NEW: 'NOUVEAU',
-  REJETE: 'REJETÉ',
-  VALIDATED: 'VALIDÉ',
+  REJETE: 'REJETE',
+  VALIDATED: 'VALIDE',
   IN_PROGRESS: 'EN COURS',
-  RESOLVED: 'RÉSOLU',
-  CLOSED: 'FERMÉ',
+  RESOLVED: 'RESOLU',
+  CLOSED: 'FERME',
 };
 
 const statusClass: Record<IncidentStatus, string> = {
@@ -63,8 +61,8 @@ const levelClass: Record<IncidentLevel, string> = {
 type TeamOption = Pick<TeamDto, 'id' | 'name'>;
 
 function fullName(user?: { firstName?: string | null; lastName?: string | null } | null): string {
-  if (!user) return 'Non renseigné';
-  return [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Non renseigné';
+  if (!user) return 'Non renseigne';
+  return [user.firstName, user.lastName].filter(Boolean).join(' ') || 'Non renseigne';
 }
 
 function formatDateTime(value?: string | null): string {
@@ -100,9 +98,43 @@ function getIncidentClient(incident: IncidentDto): string {
   return fullName(incident.createdBy);
 }
 
-function isImageAttachment(contentType?: string | null, fileName?: string | null): boolean {
-  if (contentType?.startsWith('image/')) return true;
-  return /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(fileName ?? '');
+function ModalShell({
+  onClose,
+  children,
+  className,
+}: {
+  onClose: () => void;
+  children: React.ReactNode;
+  className: string;
+}) {
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+      <button
+        type="button"
+        aria-label="Close modal backdrop"
+        className="absolute inset-0 cursor-default"
+        onClick={onClose}
+      />
+      <div className={className}>{children}</div>
+    </div>
+  );
 }
 
 function EditIncidentModal({
@@ -136,74 +168,73 @@ function EditIncidentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-xl mx-4 overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <div className="flex items-start justify-between bg-gradient-to-r from-[#1a0045] to-[#3b0b8c] p-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white">#{incident.reference}</span>
-              <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${statusClass[incident.status]}`}>
-                {statusLabel[incident.status]}
-              </span>
-            </div>
-            <p className="mt-1 text-sm text-white/80">
-              {incident.application?.name ?? 'Application'} · {getIncidentClient(incident)}
-            </p>
+    <ModalShell
+      onClose={onClose}
+      className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+    >
+      <div className="flex items-start justify-between bg-gradient-to-r from-[#1a0045] to-[#3b0b8c] px-6 py-5 text-white">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-white">#{incident.reference}</span>
+            <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${statusClass[incident.status]}`}>
+              {statusLabel[incident.status]}
+            </span>
           </div>
-          <button onClick={onClose} className="p-1 text-white/70 transition-colors hover:text-white">
-            <X className="h-5 w-5" />
+          <p className="mt-1 text-sm text-white/80">
+            {incident.application?.name ?? 'Application'} · {getIncidentClient(incident)}
+          </p>
+        </div>
+        <button onClick={onClose} className="p-1 text-white/70 transition-colors hover:text-white" aria-label="Fermer">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-slate-50 p-6">
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Incident</p>
+          <h3 className="mt-2 text-2xl font-bold text-gray-900">{incident.name ?? 'Incident sans titre'}</h3>
+          <p className="mt-4 text-sm leading-7 text-gray-700">{incident.description ?? '—'}</p>
+        </div>
+
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <label className="mb-2 block text-xs font-semibold text-gray-700">Assigner a l equipe</label>
+          <select
+            value={assignedTeamId}
+            onChange={e => setAssignedTeamId(e.target.value)}
+            className="w-full rounded-2xl border border-gray-200 bg-white px-3 py-3 text-sm text-gray-700 focus:border-primary focus:outline-none"
+          >
+            <option value="">Aucune equipe</option>
+            {teams.map(team => (
+              <option key={team.id} value={team.id}>
+                {team.name ?? `Equipe #${team.id}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="rounded-3xl border border-primary/10 bg-primary/5 p-5 text-sm text-gray-700">
+          La criticite est definie par le client lors de la creation du ticket. Le manager peut uniquement ajuster
+          l equipe assignee.
+        </div>
+
+        <div className="flex gap-2 pt-1">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-success py-3 text-sm font-semibold text-white transition-colors hover:bg-success/90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ShieldCheck className="h-4 w-4" />
+            <span>{saving ? 'Enregistrement...' : 'Enregistrer la mise a jour'}</span>
+          </button>
+          <button
+            onClick={onClose}
+            className="rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            Annuler
           </button>
         </div>
-
-        <div className="space-y-4 p-5">
-          <div className="rounded-xl bg-gray-50 p-4">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Incident</p>
-            <p className="text-sm font-semibold text-gray-900">{incident.name ?? 'Incident sans titre'}</p>
-            <p className="mt-2 text-sm leading-relaxed text-gray-700">{incident.description ?? '—'}</p>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-xs font-semibold text-gray-700">
-              Assigner à l'équipe
-            </label>
-            <select
-              value={assignedTeamId}
-              onChange={e => setAssignedTeamId(e.target.value)}
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-700 focus:border-primary focus:outline-none"
-            >
-              <option value="">Aucune équipe</option>
-              {teams.map(team => (
-                <option key={team.id} value={team.id}>
-                  {team.name ?? `Equipe #${team.id}`}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="rounded-xl border border-primary/10 bg-primary/5 p-3 text-xs text-gray-600">
-            La criticité est définie par le client lors de la création du ticket. Le manager peut uniquement ajuster l'équipe assignée.
-          </div>
-
-          <div className="flex gap-2 pt-1">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-success py-3 text-sm font-semibold text-white transition-colors hover:bg-success/90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ShieldCheck className="h-4 w-4" />
-              <span>{saving ? 'Enregistrement...' : 'Enregistrer la mise à jour'}</span>
-            </button>
-            <button
-              onClick={onClose}
-              className="rounded-xl border border-gray-200 px-4 py-3 text-sm text-gray-600 transition-colors hover:bg-gray-50"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -225,9 +256,6 @@ export default function IncidentWorkspace() {
     try {
       const data = await fetchManagerIncidents(STATIC_INCIDENT_MANAGER_ID);
       setIncidents(data);
-      if (data.length > 0 && !selectedId) {
-        setSelectedId(data[0].id);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load incidents');
     } finally {
@@ -250,15 +278,8 @@ export default function IncidentWorkspace() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const newIncidents = useMemo(
-    () => incidents.filter(incident => incident.status === 'NEW'),
-    [incidents]
-  );
-
-  const handledIncidents = useMemo(
-    () => incidents.filter(incident => incident.status !== 'NEW'),
-    [incidents]
-  );
+  const newIncidents = useMemo(() => incidents.filter(incident => incident.status === 'NEW'), [incidents]);
+  const handledIncidents = useMemo(() => incidents.filter(incident => incident.status !== 'NEW'), [incidents]);
 
   const listToShow = useMemo(() => {
     const base = mainTab === 'new' ? newIncidents : handledIncidents;
@@ -271,14 +292,10 @@ export default function IncidentWorkspace() {
   );
 
   useEffect(() => {
-    if (listToShow.length === 0) {
-      return;
+    if (selectedId && !listToShow.some(incident => incident.id === selectedId)) {
+      setSelectedId(null);
     }
-
-    if (!selectedIncident || !listToShow.some(incident => incident.id === selectedIncident.id)) {
-      setSelectedId(listToShow[0].id);
-    }
-  }, [listToShow, selectedIncident]);
+  }, [listToShow, selectedId]);
 
   const handleSaveIncident = async (updated: IncidentDto) => {
     try {
@@ -286,7 +303,7 @@ export default function IncidentWorkspace() {
       const saved = await updateIncident(updated.id, updated);
       setIncidents(prev => prev.map(incident => (incident.id === saved.id ? saved : incident)));
       setEditIncident(null);
-      setSuccessMessage(`Incident ${saved.reference} mis à jour.`);
+      setSuccessMessage(`Incident ${saved.reference} mis a jour.`);
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update incident');
@@ -295,9 +312,14 @@ export default function IncidentWorkspace() {
     }
   };
 
+  const openEditIncident = (incident: IncidentDto) => {
+    setSelectedId(null);
+    setEditIncident(incident);
+  };
+
   return (
     <div className="flex h-full flex-col space-y-4 bg-background p-6">
-      {editIncident && (
+      {editIncident ? (
         <EditIncidentModal
           incident={editIncident}
           teams={teams}
@@ -305,13 +327,13 @@ export default function IncidentWorkspace() {
           onSave={handleSaveIncident}
           saving={saving}
         />
-      )}
+      ) : null}
 
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Workspace incident manager</h1>
           <p className="text-sm text-gray-500">
-            Incidents reçus pour le manager connecté. User id statique: {STATIC_INCIDENT_MANAGER_ID}.
+            Incidents recu pour le manager connecte. User id statique: {STATIC_INCIDENT_MANAGER_ID}.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -334,7 +356,7 @@ export default function IncidentWorkspace() {
           { label: 'Total', value: incidents.length, icon: FileText, color: 'text-primary bg-primary/10' },
           { label: 'Nouveaux', value: newIncidents.length, icon: AlertTriangle, color: 'text-warning bg-warning/10' },
           { label: 'En cours', value: incidents.filter(i => i.status === 'IN_PROGRESS').length, icon: Clock, color: 'text-secondary bg-secondary/10' },
-          { label: 'Résolus', value: incidents.filter(i => i.status === 'RESOLVED').length, icon: CheckCircle, color: 'text-success bg-success/10' },
+          { label: 'Resolus', value: incidents.filter(i => i.status === 'RESOLVED').length, icon: CheckCircle, color: 'text-success bg-success/10' },
         ].map(item => (
           <div key={item.label} className="card-white flex items-center justify-between p-5">
             <div>
@@ -348,16 +370,14 @@ export default function IncidentWorkspace() {
         ))}
       </div>
 
-      <div className="flex min-h-0 flex-1 gap-6">
+      <div className="flex min-h-0 flex-1">
         <div className="card-white flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b border-gray-100 p-5">
             <div>
               <h3 className="font-bold text-gray-900">
-                {mainTab === 'new' ? 'Incidents à traiter' : 'Incidents suivis'}
+                {mainTab === 'new' ? 'Incidents a traiter' : 'Incidents suivis'}
               </h3>
-              <p className="text-xs text-gray-400">
-                Filtrés sur le manager connecté et sa boîte de réception.
-              </p>
+              <p className="text-xs text-gray-400">Filtres sur le manager connecte et sa boite de reception.</p>
             </div>
 
             <div className="flex items-center gap-2">
@@ -368,7 +388,7 @@ export default function IncidentWorkspace() {
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Rechercher..."
-                  className="w-64 rounded-full border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-primary"
+                  className="w-64 rounded-full border border-gray-200 bg-white py-2 pl-9 pr-4 text-sm focus:border-primary focus:outline-none"
                 />
               </div>
               <button className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-2 text-sm text-gray-600">
@@ -412,13 +432,13 @@ export default function IncidentWorkspace() {
               <table className="w-full text-left text-sm">
                 <thead className="sticky top-0 bg-white text-gray-400">
                   <tr>
-                    <th className="px-5 py-3 font-medium">RÉF</th>
+                    <th className="px-5 py-3 font-medium">REF</th>
                     <th className="px-5 py-3 font-medium">APPLICATION</th>
                     <th className="px-5 py-3 font-medium">CLIENT</th>
                     <th className="px-5 py-3 font-medium">STATUT</th>
-                    <th className="px-5 py-3 font-medium">CRITICITÉ</th>
+                    <th className="px-5 py-3 font-medium">CRITICITE</th>
                     <th className="px-5 py-3 font-medium">SLA</th>
-                    <th className="px-5 py-3 font-medium">ÉQUIPE / TECH</th>
+                    <th className="px-5 py-3 font-medium">EQUIPE / TECH</th>
                     <th className="px-5 py-3 text-right font-medium">ACTIONS</th>
                   </tr>
                 </thead>
@@ -448,29 +468,23 @@ export default function IncidentWorkspace() {
                               {levelLabel[incident.incidentLevel]}
                             </span>
                           ) : (
-                            <span className="text-xs text-gray-400">Non défini</span>
+                            <span className="text-xs text-gray-400">Non defini</span>
                           )}
                         </td>
-                        <td className="px-5 py-3.5 text-xs text-gray-500">
-                          {formatDateTime(incident.slaDeadline)}
-                        </td>
+                        <td className="px-5 py-3.5 text-xs text-gray-500">{formatDateTime(incident.slaDeadline)}</td>
                         <td className="px-5 py-3.5">
                           {incident.assignedTeam?.name || incident.handledBy ? (
                             <div>
-                              <p className="text-xs font-medium text-gray-800">
-                                {incident.assignedTeam?.name ?? '—'}
-                              </p>
-                              <p className="text-[10px] text-gray-400">
-                                {fullName(incident.handledBy)}
-                              </p>
+                              <p className="text-xs font-medium text-gray-800">{incident.assignedTeam?.name ?? '—'}</p>
+                              <p className="text-[10px] text-gray-400">{fullName(incident.handledBy)}</p>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-400">Non assigné</span>
+                            <span className="text-xs text-gray-400">Non assigne</span>
                           )}
                         </td>
                         <td className="px-5 py-3.5 text-right" onClick={e => e.stopPropagation()}>
                           <button
-                            onClick={() => setEditIncident(incident)}
+                            onClick={() => openEditIncident(incident)}
                             className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/5"
                           >
                             <Pencil className="h-3.5 w-3.5" />
@@ -481,144 +495,97 @@ export default function IncidentWorkspace() {
                     );
                   })}
 
-                  {!loading && !error && listToShow.length === 0 && (
+                  {!loading && !error && listToShow.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="py-16 text-center text-sm text-gray-400">
-                        Aucun incident trouvé pour ce manager.
+                        Aucun incident trouve pour ce manager.
                       </td>
                     </tr>
-                  )}
+                  ) : null}
                 </tbody>
               </table>
             )}
           </div>
         </div>
-
-        <div className="card-white flex w-[420px] shrink-0 flex-col overflow-hidden">
-          {selectedIncident ? (
-            <>
-              <div className="flex items-start justify-between border-b border-gray-100 bg-gray-50 p-5">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-gray-900">#{selectedIncident.reference}</h3>
-                    <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${statusClass[selectedIncident.status]}`}>
-                      {statusLabel[selectedIncident.status]}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {selectedIncident.application?.name ?? 'Application'} · {getIncidentClient(selectedIncident)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setSelectedId(null)}
-                  className="rounded-lg p-1.5 text-gray-500 hover:bg-gray-200"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              <div className="border-b border-gray-100 bg-white p-4">
-                <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400">Action rapide</p>
-                <button
-                  onClick={() => setEditIncident(selectedIncident)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Modifier l’incident
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                <div className="rounded-xl bg-gray-50 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Description</p>
-                  <p className="mt-2 text-sm font-semibold text-gray-900">
-                    {selectedIncident.name ?? 'Incident sans titre'}
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-700">
-                    {selectedIncident.description ?? '—'}
-                  </p>
-                </div>
-
-                {selectedIncident.attachments?.length ? (
-                  <div className="rounded-xl bg-gray-50 p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Capture / pièce jointe</p>
-                    <div className="mt-3 grid grid-cols-1 gap-3">
-                      {selectedIncident.attachments.map(attachment => {
-                        const previewUrl = getAttachmentUrl(attachment.id);
-                        const imageAttachment = isImageAttachment(attachment.contentType, attachment.fileName);
-
-                        return (
-                          <a
-                            key={attachment.id}
-                            href={previewUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-colors hover:border-primary/40 hover:shadow-md"
-                          >
-                            {imageAttachment ? (
-                              <img
-                                src={previewUrl}
-                                alt={attachment.fileName ?? 'Screenshot'}
-                                className="h-44 w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-44 w-full items-center justify-center bg-gray-100 text-sm text-gray-500">
-                                Ouvrir la pièce jointe
-                              </div>
-                            )}
-                            <div className="border-t border-gray-100 p-3">
-                              <p className="text-xs font-semibold text-gray-900">{attachment.fileName ?? 'Pièce jointe'}</p>
-                              <p className="mt-0.5 text-[10px] text-gray-400">
-                                {attachment.contentType ?? 'type inconnu'} · {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'taille inconnue'}
-                              </p>
-                            </div>
-                          </a>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : null}
-
-                {[
-                  ['Statut', statusLabel[selectedIncident.status]],
-                  ['Criticité', selectedIncident.incidentLevel ? levelLabel[selectedIncident.incidentLevel] : 'Non défini'],
-                  ['SLA', formatDateTime(selectedIncident.slaDeadline)],
-                  ['Créé le', formatDateTime(selectedIncident.createdAt)],
-                  ['Validé le', formatDateTime(selectedIncident.validatedAt)],
-                  ['Équipe', selectedIncident.assignedTeam?.name ?? 'Non assigné'],
-                  ['Technicien', fullName(selectedIncident.handledBy)],
-                  ['Manager', fullName(selectedIncident.incidentManager)],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-xl bg-gray-50 p-3">
-                    <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">{label}</p>
-                    <p className="mt-0.5 text-sm font-semibold text-gray-800">{value}</p>
-                  </div>
-                ))}
-
-                <div className="rounded-xl border border-warning/20 bg-warning/5 p-3 text-xs text-gray-700">
-                  Les nouveaux incidents peuvent être révisés ici avant leur traitement.
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex h-full items-center justify-center p-8 text-center">
-              <div>
-                <Users className="mx-auto h-10 w-10 text-gray-300" />
-                <p className="mt-3 text-sm font-semibold text-gray-900">Sélectionnez un incident</p>
-                <p className="mt-1 text-xs text-gray-500">
-                  Le panneau détail affiche le ticket à mettre à jour.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
-      {successMessage && (
+      {selectedIncident ? (
+        <ModalShell
+          onClose={() => setSelectedId(null)}
+          className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        >
+          <div className="flex items-start justify-between border-b border-gray-100 bg-gradient-to-r from-[#1a0045] to-[#3b0b8c] px-4 py-3.5 text-white">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold">#{selectedIncident.reference}</h3>
+                <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${statusClass[selectedIncident.status]}`}>
+                  {statusLabel[selectedIncident.status]}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-white/75">
+                {selectedIncident.application?.name ?? 'Application'} · {getIncidentClient(selectedIncident)}
+              </p>
+            </div>
+            <button
+              onClick={() => setSelectedId(null)}
+              className="rounded-full border border-white/15 p-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              aria-label="Fermer le detail de l incident"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-slate-50 p-4">
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Incident</p>
+                  <h4 className="mt-1 text-lg font-bold text-gray-900">
+                    {selectedIncident.name ?? 'Incident sans titre'}
+                  </h4>
+                </div>
+                <button
+                  onClick={() => openEditIncident(selectedIncident)}
+                  className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary/90"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Modifier
+                </button>
+              </div>
+              <p className="mt-3 max-h-24 overflow-hidden text-sm leading-6 text-gray-700">
+                {selectedIncident.description ?? '—'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Infos rapides</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {[
+                  ['Statut', statusLabel[selectedIncident.status]],
+                  ['Criticite', selectedIncident.incidentLevel ? levelLabel[selectedIncident.incidentLevel] : 'Non defini'],
+                  ['SLA', formatDateTime(selectedIncident.slaDeadline)],
+                  ['Equipe', selectedIncident.assignedTeam?.name ?? 'Non assigne'],
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-xl bg-gray-50 px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wide text-gray-400">{label}</p>
+                    <p className="mt-0.5 text-xs font-semibold text-gray-800">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 text-xs text-gray-700">
+              Ouvrez la modification si vous devez changer l equipe assignee.
+            </div>
+          </div>
+        </ModalShell>
+      ) : null}
+
+      {successMessage ? (
         <div className="fixed bottom-6 right-6 rounded-xl bg-success px-4 py-3 text-sm font-medium text-white shadow-lg">
           {successMessage}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

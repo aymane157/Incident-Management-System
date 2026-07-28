@@ -23,6 +23,11 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
+    public List<Application> findByClientUserId(Long clientUserId) {
+        return applicationRepository.findByClientUser_Id(clientUserId);
+    }
+
+    @Transactional(readOnly = true)
     public Optional<Application> findById(Long id) {
         return applicationRepository.findById(id);
     }
@@ -35,6 +40,11 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationDto> findAllDto() {
         return findAll().stream().map(DomainDtoMapper::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ApplicationDto> findByClientUserIdDto(Long clientUserId) {
+        return findByClientUserId(clientUserId).stream().map(DomainDtoMapper::toDto).toList();
     }
 
     @Transactional(readOnly = true)

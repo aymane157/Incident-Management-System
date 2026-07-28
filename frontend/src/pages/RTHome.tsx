@@ -1,127 +1,230 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ClipboardList, Clock, CheckCircle, AlertTriangle,
-  Search, Filter, ChevronRight, Bell
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle,
+  ClipboardList,
+  Clock,
+  Filter,
+  Loader2,
+  Search,
+  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
+import {
+  claimIncident,
+  fetchTeamById,
+  fetchTeamIncidents,
+  fetchUserById,
+  type IncidentDto,
+  type TeamDto,
+  type UserDto,
+} from '../lib/api';
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+function formatName(user?: UserDto | null) {
+  if (!user) return 'Non assigné';
+  return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Non assigné';
+}
 
-const assignedIncidents = [
-  {
-    id: '2026-06-23-1',
-    app: 'Portail RH',
-    client: 'CGI',
-    status: 'EN COURS',
-    statusClass: 'bg-secondary/10 text-secondary',
-    priority: 'Critique',
-    priorityClass: 'bg-danger/10 text-danger',
-    slaRemaining: '00h 22m',
-    slaPercent: 8,
-    assignedAt: '23/06/2026 10:15',
-    description: 'Problème de connexion sur le Portail RH',
-  },
-  {
-    id: '2026-06-23-3',
-    app: 'Réseau VPN',
-    client: 'Atos',
-    status: 'EN ATTENTE',
-    statusClass: 'bg-primary/10 text-primary',
-    priority: 'Haute',
-    priorityClass: 'bg-warning/10 text-warning',
-    slaRemaining: '01h 40m',
-    slaPercent: 33,
-    assignedAt: '23/06/2026 09:00',
-    description: 'Coupure intermittente du réseau VPN pour l\'équipe Finance',
-  },
-  {
-    id: '2026-06-22-7',
-    app: 'Intranet',
-    client: 'Capgemini',
-    status: 'EN ATTENTE',
-    statusClass: 'bg-primary/10 text-primary',
-    priority: 'Moyenne',
-    priorityClass: 'bg-gray-100 text-gray-600',
-    slaRemaining: '03h 10m',
-    slaPercent: 63,
-    assignedAt: '22/06/2026 16:00',
-    description: 'Pages intranet non accessibles après la mise à jour',
-  },
-  {
-    id: '2026-06-22-4',
-    app: 'CRM',
-    client: 'Sopra',
-    status: 'RÉSOLU',
-    statusClass: 'bg-success/10 text-success',
-    priority: 'Basse',
-    priorityClass: 'bg-gray-100 text-gray-600',
-    slaRemaining: '—',
-    slaPercent: 100,
-    assignedAt: '22/06/2026 12:30',
-    description: 'Données manquantes sur les fiches clients',
-  },
-  {
-    id: '2026-06-21-9',
-    app: 'ERP Finance',
-    client: 'CGI',
-    status: 'RÉSOLU',
-    statusClass: 'bg-success/10 text-success',
-    priority: 'Haute',
-    priorityClass: 'bg-warning/10 text-warning',
-    slaRemaining: '—',
-    slaPercent: 100,
-    assignedAt: '21/06/2026 08:45',
-    description: 'Module de facturation inaccessible',
-  },
-];
+function statusLabel(status: IncidentDto['status']) {
+  switch (status) {
+    case 'NEW':
+      return 'Nouveau';
+    case 'VALIDATED':
+      return 'Validé';
+    case 'IN_PROGRESS':
+      return 'En cours';
+    case 'RESOLVED':
+      return 'Résolu';
+    case 'CLOSED':
+      return 'Clos';
+    case 'REJETE':
+      return 'Rejeté';
+    default:
+      return status;
+  }
+}
 
-const kpis = [
-  { label: 'Assignés',       value: '5', icon: ClipboardList, color: 'text-primary bg-primary/10'     },
-  { label: 'En cours',       value: '1', icon: Clock,         color: 'text-secondary bg-secondary/10' },
-  { label: 'Résolus auj.',   value: '2', icon: CheckCircle,   color: 'text-success bg-success/10'     },
-  { label: 'SLA en risque',  value: '1', icon: AlertTriangle, color: 'text-danger bg-danger/10'       },
-];
+function statusClass(status: IncidentDto['status']) {
+  switch (status) {
+    case 'NEW':
+      return 'bg-primary/10 text-primary';
+    case 'VALIDATED':
+      return 'bg-secondary/10 text-secondary';
+    case 'IN_PROGRESS':
+      return 'bg-warning/10 text-warning';
+    case 'RESOLVED':
+      return 'bg-success/10 text-success';
+    case 'CLOSED':
+      return 'bg-gray-100 text-gray-600';
+    case 'REJETE':
+      return 'bg-danger/10 text-danger';
+    default:
+      return 'bg-gray-100 text-gray-600';
+  }
+}
 
-// ─── Component ────────────────────────────────────────────────────────────────
+function priorityClass(level?: IncidentDto['incidentLevel'] | null) {
+  switch (level) {
+    case 'CRITICAL':
+      return 'bg-danger/10 text-danger';
+    case 'HIGH':
+      return 'bg-warning/10 text-warning';
+    case 'MEDIUM':
+      return 'bg-secondary/10 text-secondary';
+    case 'LOW':
+      return 'bg-success/10 text-success';
+    default:
+      return 'bg-gray-100 text-gray-600';
+  }
+}
 
 export default function RTHome() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const firstName = user?.name?.split(' ')[0] ?? 'vous';
+  const [currentUser, setCurrentUser] = useState<UserDto | null>(null);
+  const [team, setTeam] = useState<TeamDto | null>(null);
+  const [incidents, setIncidents] = useState<IncidentDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | IncidentDto['status']>('all');
+  const [claimingId, setClaimingId] = useState<number | null>(null);
 
-  const filtered = assignedIncidents.filter(inc => {
-    const matchSearch =
-      inc.id.toLowerCase().includes(search.toLowerCase()) ||
-      inc.app.toLowerCase().includes(search.toLowerCase()) ||
-      inc.client.toLowerCase().includes(search.toLowerCase());
-    const matchStatus =
-      statusFilter === 'all' ||
-      inc.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  useEffect(() => {
+    let active = true;
+
+    async function loadQueue() {
+      if (!user?.id) {
+        setError('Utilisateur non connecté.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError('');
+
+      try {
+        const userData = await fetchUserById(user.id);
+        if (!active) return;
+        setCurrentUser(userData);
+
+        if (!userData.teamId) {
+          setError('Ce compte n’est rattaché à aucune équipe.');
+          setTeam(null);
+          setIncidents([]);
+          return;
+        }
+
+        const [teamData, incidentsData] = await Promise.all([
+          fetchTeamById(userData.teamId),
+          fetchTeamIncidents(userData.teamId),
+        ]);
+
+        if (!active) return;
+        setTeam(teamData);
+        setIncidents(incidentsData);
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : 'Impossible de charger la file de traitement.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadQueue();
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
+
+  const firstName = user?.name?.split(' ')[0] ?? 'vous';
+
+  const filtered = useMemo(() => {
+    return incidents.filter((incident) => {
+      const matchSearch =
+        incident.reference.toLowerCase().includes(search.toLowerCase()) ||
+        incident.name?.toLowerCase().includes(search.toLowerCase()) ||
+        incident.description?.toLowerCase().includes(search.toLowerCase()) ||
+        incident.application?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        formatName(incident.createdBy).toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === 'all' || incident.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [incidents, search, statusFilter]);
+
+  const newCount = incidents.filter((incident) => incident.status === 'NEW').length;
+  const inProgressCount = incidents.filter((incident) => incident.status === 'IN_PROGRESS').length;
+  const riskCount = incidents.filter((incident) => incident.incidentLevel === 'CRITICAL' || incident.incidentLevel === 'HIGH').length;
+
+  async function handleClaim(incident: IncidentDto) {
+    if (!user?.id) return;
+    setClaimingId(incident.id);
+    setError('');
+
+    try {
+      const updated = await claimIncident(incident.id, user.id);
+      setIncidents((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      navigate(`/rt/incident/${updated.reference}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de prendre en charge cet incident.');
+    } finally {
+      setClaimingId(null);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm font-medium text-gray-700">Chargement de votre file d’incidents...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !team) {
+    return (
+      <div className="h-full bg-background p-8">
+        <div className="card-white mx-auto max-w-2xl p-8">
+          <h1 className="text-2xl font-bold text-gray-900">Accès RT</h1>
+          <p className="mt-2 text-sm text-gray-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bonjour, {firstName} 👋</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Bonjour, {firstName}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Responsable de Traitement · {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {team ? `Équipe ${team.name ?? 'non nommée'} · ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}` : 'Aucune équipe associée'}
           </p>
         </div>
-        <button className="relative p-2 rounded-full hover:bg-gray-100 text-gray-600">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
-        </button>
+        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600">
+          <div className="font-semibold text-gray-900">{formatName(currentUser)}</div>
+          <div>{currentUser?.teamName ?? 'Membre équipe'}</div>
+        </div>
       </div>
 
-      {/* KPIs */}
+      {error ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
+          {error}
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {kpis.map((kpi, i) => (
+        {[
+          { label: 'Assignés équipe', value: incidents.length, icon: ClipboardList, color: 'text-primary bg-primary/10' },
+          { label: 'Nouveaux', value: newCount, icon: Clock, color: 'text-secondary bg-secondary/10' },
+          { label: 'En cours', value: inProgressCount, icon: CheckCircle, color: 'text-success bg-success/10' },
+          { label: 'SLA en risque', value: riskCount, icon: AlertTriangle, color: 'text-danger bg-danger/10' },
+        ].map((kpi, i) => (
           <div key={i} className="card-white p-5 flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">{kpi.label}</p>
@@ -134,39 +237,35 @@ export default function RTHome() {
         ))}
       </div>
 
-      {/* SLA Alert */}
-      <div className="bg-danger/10 border border-danger/20 rounded-xl px-5 py-3.5 flex items-center space-x-3">
-        <div className="w-8 h-8 rounded-lg bg-danger/20 flex items-center justify-center shrink-0">
-          <AlertTriangle className="w-4 h-4 text-danger" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-danger">Incident 2026-06-23-1 va dépasser son SLA dans moins de 30 minutes</p>
-          <p className="text-xs text-danger/70 mt-0.5">Portail RH · Priorité Critique · Assigné à vous</p>
-        </div>
-      </div>
-
-      {/* Incident Table */}
       <div className="card-white flex flex-col">
         <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <h3 className="font-bold text-gray-900">Mes incidents assignés</h3>
-          <div className="flex items-center gap-3">
-            {/* Search */}
+          <div>
+            <h3 className="font-bold text-gray-900">Incidents de mon équipe</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Vous pouvez prendre en charge un incident avant d’ouvrir le rapport RCA.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="relative w-56">
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Rechercher..."
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 pl-9 pr-4 text-sm focus:outline-none focus:border-primary"
               />
             </div>
-            {/* Status Filter */}
             <div className="flex items-center space-x-1 border border-gray-200 rounded-lg overflow-hidden text-xs font-medium">
-              {[['all', 'Tous'], ['EN COURS', 'En cours'], ['EN ATTENTE', 'En attente'], ['RÉSOLU', 'Résolus']].map(([val, lbl]) => (
+              {[
+                ['all', 'Tous'],
+                ['NEW', 'Nouveaux'],
+                ['IN_PROGRESS', 'En cours'],
+                ['RESOLVED', 'Résolus'],
+              ].map(([val, lbl]) => (
                 <button
                   key={val}
-                  onClick={() => setStatusFilter(val)}
+                  onClick={() => setStatusFilter(val as typeof statusFilter)}
                   className={`px-3 py-2 transition-colors ${statusFilter === val ? 'bg-primary text-white' : 'text-gray-500 hover:bg-gray-50'}`}
                 >
                   {lbl}
@@ -184,64 +283,76 @@ export default function RTHome() {
           <table className="w-full text-left text-sm">
             <thead className="text-gray-400 font-medium sticky top-0 bg-white shadow-sm">
               <tr>
-                <th className="py-3 px-5 font-medium">ID</th>
+                <th className="py-3 px-5 font-medium">RÉF.</th>
                 <th className="py-3 px-5 font-medium">APPLICATION</th>
                 <th className="py-3 px-5 font-medium">CLIENT</th>
                 <th className="py-3 px-5 font-medium">STATUT</th>
-                <th className="py-3 px-5 font-medium">SLA RESTANT</th>
                 <th className="py-3 px-5 font-medium">PRIORITÉ</th>
-                <th className="py-3 px-5 font-medium">ASSIGNÉ LE</th>
+                <th className="py-3 px-5 font-medium">AFFECTÉ À</th>
                 <th className="py-3 px-5 font-medium text-right">ACTION</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filtered.map((inc, i) => (
-                <tr
-                  key={i}
-                  className="hover:bg-gray-50/60 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/rt/incident/${inc.id}`)}
-                >
-                  <td className="py-4 px-5 font-medium text-gray-900">{inc.id}</td>
-                  <td className="py-4 px-5 text-gray-600">{inc.app}</td>
-                  <td className="py-4 px-5 text-gray-600">{inc.client}</td>
-                  <td className="py-4 px-5">
-                    <span className={`text-[10px] px-2 py-1 rounded font-bold ${inc.statusClass}`}>{inc.status}</span>
-                  </td>
-                  <td className="py-4 px-5">
-                    {inc.slaRemaining === '—' ? (
-                      <span className="text-gray-400">—</span>
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <span className={`font-semibold text-xs ${inc.slaPercent <= 15 ? 'text-danger' : inc.slaPercent <= 35 ? 'text-warning' : 'text-gray-600'}`}>
-                          {inc.slaRemaining}
-                        </span>
-                        <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${inc.slaPercent <= 15 ? 'bg-danger' : inc.slaPercent <= 35 ? 'bg-warning' : 'bg-success'}`}
-                            style={{ width: inc.slaPercent + '%' }}
-                          />
-                        </div>
+              {filtered.map((incident) => {
+                const claimedByMe = user?.id && incident.handledBy?.id === user.id;
+                const canClaim = team?.id && incident.assignedTeam?.id === team.id && !claimedByMe && incident.status !== 'CLOSED';
+
+                return (
+                  <tr
+                    key={incident.id}
+                    className="hover:bg-gray-50/60 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/rt/incident/${incident.reference}`)}
+                  >
+                    <td className="py-4 px-5 font-medium text-gray-900">{incident.reference}</td>
+                    <td className="py-4 px-5 text-gray-600">{incident.application?.name ?? '—'}</td>
+                    <td className="py-4 px-5 text-gray-600">{formatName(incident.createdBy)}</td>
+                    <td className="py-4 px-5">
+                      <span className={`text-[10px] px-2 py-1 rounded font-bold ${statusClass(incident.status)}`}>
+                        {statusLabel(incident.status)}
+                      </span>
+                    </td>
+                    <td className="py-4 px-5">
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${priorityClass(incident.incidentLevel)}`}>
+                        {incident.incidentLevel ?? '—'}
+                      </span>
+                    </td>
+                    <td className="py-4 px-5 text-gray-500 text-xs">
+                      {claimedByMe ? 'Vous' : formatName(incident.handledBy)}
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {canClaim ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleClaim(incident);
+                            }}
+                            disabled={claimingId === incident.id}
+                            className="inline-flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"
+                          >
+                            {claimingId === incident.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />}
+                            {claimingId === incident.id ? 'Prise en charge...' : 'Me l’assigner'}
+                          </button>
+                        ) : null}
+                        <button
+                          className="flex items-center space-x-1 text-primary text-xs font-semibold hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/rt/incident/${incident.reference}`);
+                          }}
+                        >
+                          <span>Ouvrir</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
                       </div>
-                    )}
-                  </td>
-                  <td className="py-4 px-5">
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${inc.priorityClass}`}>{inc.priority}</span>
-                  </td>
-                  <td className="py-4 px-5 text-gray-500 text-xs">{inc.assignedAt}</td>
-                  <td className="py-4 px-5 text-right">
-                    <button
-                      className="flex items-center space-x-1 text-primary text-xs font-semibold hover:underline ml-auto"
-                      onClick={e => { e.stopPropagation(); navigate(`/rt/incident/${inc.id}`); }}
-                    >
-                      <span>Ouvrir</span>
-                      <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                );
+              })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-400 text-sm">
+                  <td colSpan={7} className="py-12 text-center text-gray-400 text-sm">
                     Aucun incident trouvé.
                   </td>
                 </tr>
@@ -251,7 +362,7 @@ export default function RTHome() {
         </div>
 
         <div className="p-4 border-t border-gray-100 text-center text-xs text-gray-500 font-medium">
-          {filtered.length} sur {assignedIncidents.length} incident(s) affichés
+          {filtered.length} sur {incidents.length} incident(s) affiché(s)
         </div>
       </div>
     </div>

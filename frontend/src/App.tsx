@@ -10,6 +10,8 @@ import AdminSettings from './pages/AdminSettings';
 import ManagerHome from './pages/ManagerHome';
 import RTHome from './pages/RTHome';
 import RTIncidentDetail from './pages/RTIncidentDetail';
+import IncidentDetail from './pages/IncidentDetail';
+import RTRcaReport from './pages/RTRcaReport';
 import Sidebar from './components/Sidebar';
 
 // ─── Role → default home route ────────────────────────────────────────────────
@@ -190,8 +192,22 @@ function AppRoutes() {
         path="/rt/report"
         element={
           <ProtectedRoute allowedRoles={['rt']}>
-            <AppLayout><RTHome /></AppLayout>
+            <AppLayout><RTRcaReport /></AppLayout>
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rt/report/:referenceId"
+        element={
+          <ProtectedRoute allowedRoles={['rt']}>
+            <AppLayout><RTRcaReport /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/incidents/:referenceId"
+        element={
+          <AppLayout><IncidentDetail /></AppLayout>
         }
       />
 

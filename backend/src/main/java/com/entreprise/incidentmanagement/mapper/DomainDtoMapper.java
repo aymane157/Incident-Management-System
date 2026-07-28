@@ -31,6 +31,7 @@ public final class DomainDtoMapper {
                 .id(entity.getId())
                 .name(entity.getName())
                 .description(entity.getDescription())
+                .clientUser(toDto(entity.getClientUser()))
                 .appTeam(toDto(entity.getAppTeam()))
                 .systemTeam(toDto(entity.getSystemTeam()))
                 .databaseTeam(toDto(entity.getDatabaseTeam()))
@@ -45,6 +46,7 @@ public final class DomainDtoMapper {
         Application entity = Application.builder()
                 .name(dto.getName())
                 .description(dto.getDescription())
+                .clientUser(toEntity(dto.getClientUser()))
                 .build();
         entity.setId(dto.getId());
         entity.setAppTeam(toEntity(dto.getAppTeam()));
@@ -96,6 +98,9 @@ public final class DomainDtoMapper {
                 .email(entity.getEmail())
                 .password(entity.getPassword())
                 .role(entity.getRole())
+                .teamId(entity.getTeam() != null ? entity.getTeam().getId() : null)
+                .teamName(entity.getTeam() != null ? entity.getTeam().getName() : null)
+                .teamFunctionRole(entity.getTeam() != null ? entity.getTeam().getFunctionRole() : null)
                 .build();
     }
 
@@ -111,6 +116,10 @@ public final class DomainDtoMapper {
                 .role(dto.getRole())
                 .build();
         user.setId(dto.getId());
+        if (dto.getTeamId() != null) {
+            Team team = Team.builder().id(dto.getTeamId()).build();
+            user.setTeam(team);
+        }
         return user;
     }
 

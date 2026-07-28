@@ -59,6 +59,9 @@ public class RcaReportService {
 
     @Transactional
     public RcaReportDto saveDto(RcaReportDto reportDto) {
+        if (reportDto.getCreatedAt() == null) {
+            reportDto.setCreatedAt(java.time.LocalDateTime.now());
+        }
         return DomainDtoMapper.toDto(save(DomainDtoMapper.toEntity(reportDto)));
     }
 

@@ -59,6 +59,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
         Application portailRh = createApplicationIfMissing(
                 "Portail RH",
                 "Application RH pour les collaborateurs",
+                jean,
                 applicatif,
                 systeme,
                 baseDonnee,
@@ -67,6 +68,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
         Application erpFinance = createApplicationIfMissing(
                 "ERP Finance",
                 "Gestion financiere et comptable",
+                jean,
                 applicatif,
                 systeme,
                 baseDonnee,
@@ -75,6 +77,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
         Application crm = createApplicationIfMissing(
                 "CRM",
                 "Suivi commercial et relation client",
+                jean,
                 applicatif,
                 systeme,
                 null,
@@ -83,6 +86,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
         Application intranet = createApplicationIfMissing(
                 "Intranet",
                 "Portail interne de l'entreprise",
+                jean,
                 applicatif,
                 systeme,
                 null,
@@ -225,6 +229,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
     private Application createApplicationIfMissing(
             String name,
             String description,
+            User clientUser,
             Team appTeam,
             Team systemTeam,
             Team databaseTeam,
@@ -235,6 +240,10 @@ public class BootstrapDataRunner implements CommandLineRunner {
                     boolean changed = false;
                     if (existing.getDescription() == null || existing.getDescription().isBlank()) {
                         existing.setDescription(description);
+                        changed = true;
+                    }
+                    if (existing.getClientUser() == null && clientUser != null) {
+                        existing.setClientUser(clientUser);
                         changed = true;
                     }
                     if (existing.getAppTeam() == null && appTeam != null) {
@@ -262,6 +271,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
                         Application.builder()
                                 .name(name)
                                 .description(description)
+                                .clientUser(clientUser)
                                 .appTeam(appTeam)
                                 .systemTeam(systemTeam)
                                 .databaseTeam(databaseTeam)

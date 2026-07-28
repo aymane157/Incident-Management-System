@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { AlertCircle, ArrowLeft, Loader2, Paperclip, Send } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Loader2, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
 import {
   createClientIncident,
   fetchApplications,
@@ -21,7 +22,8 @@ function fileKey(file: File) {
 
 export default function CreateIncident() {
   const navigate = useNavigate();
-  const staticClientUserId = 2;
+  const { user } = useAuth();
+  const clientUserId = user?.id ?? 2;
   const [applications, setApplications] = useState<ApplicationOption[]>([]);
   const [applicationId, setApplicationId] = useState('');
   const [incidentLevel, setIncidentLevel] = useState<IncidentLevel | ''>('');
@@ -41,7 +43,7 @@ export default function CreateIncident() {
       setError('');
 
       try {
-        const data = await fetchApplications();
+        const data = await fetchApplications(clientUserId);
         if (!active) return;
 
         setApplications(data);
@@ -133,7 +135,7 @@ export default function CreateIncident() {
     setSuccessMessage('');
 
     if (!applicationId) {
-      setError('Veuillez sélectionner une application.');
+      setError('Veuillez sélectionner une application liée à votre compte.');
       return;
     }
 
@@ -150,7 +152,7 @@ export default function CreateIncident() {
     const formData = new FormData();
     formData.append('description', description.trim());
     formData.append('applicationId', applicationId);
-    formData.append('createdById', String(staticClientUserId));
+    formData.append('createdById', String(clientUserId));
     formData.append('incidentLevel', incidentLevel);
     attachments.forEach((file) => formData.append('attachments', file));
 
@@ -184,26 +186,10 @@ export default function CreateIncident() {
         <div className="text-xs text-gray-400 mt-2 ml-6">Accueil &gt; Nouveau ticket</div>
       </div>
 
-    <div className="flex-1 flex min-h-0 overflow-hidden px-12 py-4 gap-12">
+   <div className="flex-1 flex min-h-0 overflow-y-auto px-12 py-4 gap-12">
         <div className="w-48 space-y-6 pt-4">
-          <div className="flex items-center space-x-3 text-primary">
-            <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs font-bold">
-              1
-            </div>
-            <span className="text-sm font-semibold">Informations</span>
-          </div>
-          <div className="flex items-center space-x-3 text-gray-400">
-            <div className="w-6 h-6 rounded-full border-2 border-gray-200 flex items-center justify-center text-xs font-bold">
-              2
-            </div>
-            <span className="text-sm font-medium">Détails</span>
-          </div>
-          <div className="flex items-center space-x-3 text-gray-400">
-            <div className="w-6 h-6 rounded-full border-2 border-gray-200 flex items-center justify-center text-xs font-bold">
-              3
-            </div>
-            <span className="text-sm font-medium">Confirmation</span>
-          </div>
+       
+         
 
           <div className="pt-20">
             <div className="w-32 h-32 bg-primary/10 rounded-full mx-auto relative overflow-hidden flex items-center justify-center">
@@ -267,6 +253,11 @@ export default function CreateIncident() {
                       </option>
                     ))}
                   </select>
+                  {!loadingApplications && applications.length === 0 ? (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Aucune application n'est associée à ce compte client.
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="space-y-1.5">
@@ -425,7 +416,11 @@ export default function CreateIncident() {
               >
                 Annuler
               </button>
-              <button type="submit" className="btn-primary gap-2 min-w-36" disabled={submitting || loadingApplications}>
+              <button
+                type="submit"
+                className="btn-primary gap-2 min-w-36"
+                disabled={submitting || loadingApplications || applications.length === 0}
+              >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 <span>{submitting ? 'Envoi en cours' : 'Créer le ticket'}</span>
               </button>
