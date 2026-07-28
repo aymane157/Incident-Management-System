@@ -4,6 +4,11 @@ export type ApplicationOption = {
   id: number;
   name: string;
   description?: string | null;
+  clientUser?: UserDto | null;
+  appTeam?: TeamDto | null;
+  systemTeam?: TeamDto | null;
+  databaseTeam?: TeamDto | null;
+  networkTeam?: TeamDto | null;
 };
 
 export type IncidentStatus = 'NEW' | 'REJETE' | 'VALIDATED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
@@ -14,6 +19,8 @@ export type UserDto = {
   firstName?: string | null;
   lastName?: string | null;
   email?: string | null;
+  password?: string | null;
+  role?: string | null;
   teamId?: number | null;
   teamName?: string | null;
   teamFunctionRole?: string | null;
@@ -22,6 +29,9 @@ export type UserDto = {
 export type TeamDto = {
   id: number;
   name?: string | null;
+  members?: UserDto[] | null;
+  functionRole?: string | null;
+  description?: string | null;
 };
 
 export type AttachmentDto = {
@@ -119,6 +129,32 @@ export async function fetchIncidents(): Promise<IncidentDto[]> {
 
 export async function fetchManagerIncidents(managerId: number = STATIC_INCIDENT_MANAGER_ID): Promise<IncidentDto[]> {
   const response = await fetch(`${API_BASE_URL}/incidents/manager/${managerId}`);
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchUsers(): Promise<UserDto[]> {
+  const response = await fetch(`${API_BASE_URL}/users`);
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function updateUser(userId: number, user: UserDto): Promise<UserDto> {
+  const response = await fetch(`${API_BASE_URL}/users/${userId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(user),
+  });
 
   if (!response.ok) {
     throw new Error(await parseError(response));

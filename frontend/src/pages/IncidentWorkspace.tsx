@@ -7,6 +7,7 @@ import {
   Clock,
   FileText,
   Filter,
+  Paperclip,
   Pencil,
   RefreshCw,
   Search,
@@ -16,6 +17,7 @@ import {
 import {
   fetchManagerIncidents,
   fetchTeams,
+  getAttachmentUrl,
   IncidentDto,
   IncidentLevel,
   IncidentStatus,
@@ -215,6 +217,44 @@ function EditIncidentModal({
         <div className="rounded-3xl border border-primary/10 bg-primary/5 p-5 text-sm text-gray-700">
           La criticite est definie par le client lors de la creation du ticket. Le manager peut uniquement ajuster
           l equipe assignee.
+        </div>
+
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Paperclip className="h-4 w-4 text-primary" />
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Pieces jointes</p>
+          </div>
+
+          {incident.attachments?.length ? (
+            <div className="mt-4 space-y-3">
+              {incident.attachments.map((attachment) => (
+                <a
+                  key={attachment.id}
+                  href={getAttachmentUrl(attachment.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex items-start justify-between gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4 transition hover:border-primary/30 hover:bg-primary/5"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-gray-900">
+                      {attachment.fileName ?? `Piece jointe #${attachment.id}`}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {attachment.contentType ?? 'type inconnu'} ·{' '}
+                      {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'taille inconnue'}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold text-primary shadow-sm transition group-hover:bg-primary group-hover:text-white">
+                    Ouvrir
+                  </span>
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
+              Aucune piece jointe pour cet incident.
+            </div>
+          )}
         </div>
 
         <div className="flex gap-2 pt-1">

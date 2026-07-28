@@ -3,6 +3,7 @@ package com.entreprise.incidentmanagement.service;
 import com.entreprise.incidentmanagement.domain.Role;
 import com.entreprise.incidentmanagement.domain.User;
 import com.entreprise.incidentmanagement.dto.UserDto;
+import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
 import com.entreprise.incidentmanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -60,9 +61,12 @@ public class UserService {
     @Transactional
     public UserDto updateDto(Long id, UserDto userDto) {
         User existing = findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
         User updated = DomainDtoMapper.toEntity(userDto);
         updated.setId(existing.getId());
+        if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
+            updated.setPassword(existing.getPassword());
+        }
         return DomainDtoMapper.toDto(userRepository.save(updated));
     }
 

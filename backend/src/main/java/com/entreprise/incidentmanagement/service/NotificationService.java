@@ -16,6 +16,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,15 +40,20 @@ public class NotificationService {
                     notificationDto.getIncident() != null ? notificationDto.getIncident().getReference() : null);
             return notificationDto;
         }
-
+        String sla="";
         SimpleMailMessage mailMessage = new SimpleMailMessage();
         mailMessage.setFrom("IncidentSystem");
         if(notificationDto.getIncident().getSlaDeadline() != null) {
-            mailMessage.setSubject(notificationDto.getType().name() +" "+ "Incident:" + notificationDto.getIncident().getReference() +"With Deadline" +notificationDto.getIncident().getSlaDeadline() +"And Criticality"+notificationDto.getIncident().getIncidentLevel());
+           sla=formatDate(notificationDto.getIncident().getSlaDeadline());
+            mailMessage.setSubject(notificationDto.getType().name() +" "+ "Incident:" + notificationDto.getIncident().getReference() +"With Criticality"+" "+notificationDto.getIncident().getIncidentLevel());
         }else{
             mailMessage.setSubject(notificationDto.getType().name() + "Incident:" + notificationDto.getIncident().getReference());
         }
+
         String message = notificationDto.getMessage()
+                + "\n\n"
+                +"SLA Deadline : "
+                + sla
                 + "\n\n"
                 + "View incident: "
                 + frontend
@@ -59,7 +66,12 @@ public class NotificationService {
 
         return notificationDto;
     }
+    private String formatDate(LocalDateTime date) {
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+        return date.format(formatter);
+    }
     @Transactional(readOnly = true)
     public List<Notification> findAll() {
         return notificationRepository.findAll();
