@@ -12,6 +12,7 @@ import RTHome from './pages/RTHome';
 import RTIncidentDetail from './pages/RTIncidentDetail';
 import IncidentDetail from './pages/IncidentDetail';
 import RTRcaReport from './pages/RTRcaReport';
+import ManagerRcaInbox from './pages/ManagerRcaInbox';
 import Sidebar from './components/Sidebar';
 
 // ─── Role → default home route ────────────────────────────────────────────────
@@ -125,6 +126,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['manager']}>
             <AppLayout><IncidentWorkspace /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/rca"
+        element={
+          <ProtectedRoute allowedRoles={['manager']}>
+            <AppLayout><ManagerRcaInbox /></AppLayout>
           </ProtectedRoute>
         }
       />

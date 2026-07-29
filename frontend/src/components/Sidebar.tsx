@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Ticket, PlusCircle,
   HelpCircle, LogOut, Settings, Users, Layers,
-  Shield, Zap, Wrench, FileText, ClipboardList
+  Shield, Zap, Wrench, FileText, ClipboardList, Inbox
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
@@ -18,6 +18,7 @@ const clientNav: NavItem[] = [
 const managerNav: NavItem[] = [
   { name: 'Tableau de bord',  path: '/manager/home',      icon: LayoutDashboard },
   { name: 'Workspace',        path: '/manager/workspace', icon: Zap             },
+  { name: 'RCA reçus',        path: '/manager/rca',       icon: Inbox           },
 ];
 
 const adminNav: NavItem[] = [

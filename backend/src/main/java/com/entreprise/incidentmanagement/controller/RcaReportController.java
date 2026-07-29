@@ -58,4 +58,9 @@ public class RcaReportController {
         rcaReportService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/get")
+    public ResponseEntity<List<RcaReportDto>> getAll() {
+        return ResponseEntity.ok(rcaReportService.findAllDto());
+    }
 }

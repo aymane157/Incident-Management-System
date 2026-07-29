@@ -56,6 +56,15 @@ export type RcaReportDto = {
   validatedAt?: string | null;
 };
 
+export type NotificationDto = {
+  id: number;
+  recipient?: UserDto | null;
+  incident?: IncidentDto | null;
+  type?: string | null;
+  message?: string | null;
+  createdAt?: string | null;
+};
+
 export type IncidentDto = {
   id: number;
   reference: string;
@@ -96,8 +105,8 @@ async function parseError(response: Response): Promise<string> {
   return text.trim() || `Request failed with status ${response.status}`;
 }
 
-export async function fetchApplications(clientUserId?: number): Promise<ApplicationOption[]> {
-  const url = clientUserId ? `${API_BASE_URL}/applications/client/${clientUserId}` : `${API_BASE_URL}/applications`;
+export async function fetchApplications(_clientUserId?: number): Promise<ApplicationOption[]> {
+  const url =  `${API_BASE_URL}/applications`;
   const response = await fetch(url);
 
   if (!response.ok) {
@@ -262,6 +271,16 @@ export async function fetchRcaReportByIncident(incidentId: number): Promise<RcaR
   return response.json();
 }
 
+export async function fetchRcaReports(): Promise<RcaReportDto[]> {
+  const response = await fetch(`${API_BASE_URL}/rca-reports`);
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
 export async function createRcaReport(report: Record<string, unknown>): Promise<RcaReportDto> {
   const response = await fetch(`${API_BASE_URL}/rca-reports`, {
     method: 'POST',
@@ -270,6 +289,32 @@ export async function createRcaReport(report: Record<string, unknown>): Promise<
     },
     body: JSON.stringify(report),
   });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function updateRcaReport(id: number, report: Record<string, unknown>): Promise<RcaReportDto> {
+  const response = await fetch(`${API_BASE_URL}/rca-reports/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(report),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function fetchNotificationsByRecipient(userId: number): Promise<NotificationDto[]> {
+  const response = await fetch(`${API_BASE_URL}/notifications/recipient/${userId}`);
 
   if (!response.ok) {
     throw new Error(await parseError(response));
