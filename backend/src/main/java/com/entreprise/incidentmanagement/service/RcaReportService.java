@@ -5,6 +5,7 @@ import com.entreprise.incidentmanagement.domain.Notification;
 import com.entreprise.incidentmanagement.domain.NotificationType;
 import com.entreprise.incidentmanagement.domain.RcaReport;
 import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.NotificationDto;
 import com.entreprise.incidentmanagement.dto.RcaReportDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
 import com.entreprise.incidentmanagement.repository.IncidentRepository;
@@ -90,7 +91,8 @@ public class RcaReportService {
 
                 .message("Nouveau RCA recu pour l'incident " + reference)
                 .build();
-        notificationService.sendMailNotification(notification);
+        NotificationDto notificationDto= DomainDtoMapper.toDto(notification);
+        notificationService.sendMailNotification(notificationDto,"aymanemwa@gmail.com");
     }
 
     @Transactional
