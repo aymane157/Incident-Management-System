@@ -15,6 +15,7 @@ import {
   fetchNewIncident,
   fetchUserById,
   getAttachmentUrl,
+  rejectIncidentWithReason,
   type IncidentDto,
   type UserDto,
 } from '../lib/api';
@@ -77,6 +78,9 @@ export default function RTIncidentDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [claiming, setClaiming] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -115,14 +119,21 @@ export default function RTIncidentDetail() {
   }, [referenceId, user?.id]);
 
   const canClaim = useMemo(() => {
-    if (!incident || !currentUser?.teamId || incident.status === 'CLOSED') return false;
+    if (!incident || !currentUser?.teamId) return false;
+    if (incident.status === 'CLOSED' || incident.status === 'REJETE') return false;
     return incident.assignedTeam?.id === currentUser.teamId && incident.handledBy?.id !== currentUser.id;
   }, [currentUser?.id, currentUser?.teamId, incident]);
 
   const canWriteReport = useMemo(() => {
     if (!incident || !currentUser?.id) return false;
-    return incident.handledBy?.id === currentUser.id;
+    return incident.handledBy?.id === currentUser.id && incident.status !== 'CLOSED' && incident.status !== 'REJETE';
   }, [currentUser?.id, incident]);
+
+  const canReject = useMemo(() => {
+    if (!incident || !currentUser?.teamId) return false;
+    if (incident.status === 'CLOSED' || incident.status === 'REJETE') return false;
+    return incident.assignedTeam?.id === currentUser.teamId;
+  }, [currentUser?.teamId, incident]);
 
   async function handleClaim() {
     if (!incident || !user?.id) return;
@@ -136,6 +147,33 @@ export default function RTIncidentDetail() {
       setError(err instanceof Error ? err.message : 'Impossible de prendre en charge l’incident.');
     } finally {
       setClaiming(false);
+    }
+  }
+
+  async function handleReject() {
+    if (!incident || !user?.id) return;
+    const trimmedReason = rejectReason.trim();
+    if (!trimmedReason) {
+      setError('Veuillez saisir un motif de rejet.');
+      return;
+    }
+
+    setRejecting(true);
+    setError('');
+    setActionMessage('');
+
+    try {
+      const updated = await rejectIncidentWithReason(incident.reference, {
+        reason: trimmedReason,
+        teamMemberId: user.id,
+      });
+      setIncident(updated);
+      setRejectReason('');
+      setActionMessage('Incident rejeté et notifié au manager.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible de rejeter l'incident.");
+    } finally {
+      setRejecting(false);
     }
   }
 
@@ -250,6 +288,12 @@ export default function RTIncidentDetail() {
             </div>
           ) : null}
 
+          {actionMessage ? (
+            <div className="rounded-xl border border-green-200 bg-green-50 px-5 py-3 text-sm text-green-800">
+              {actionMessage}
+            </div>
+          ) : null}
+
           <section className="card-white p-6">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -328,6 +372,29 @@ export default function RTIncidentDetail() {
                 Rédiger le RCA
               </button>
 
+              {canReject ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                  <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-red-700">
+                    Motif de rejet
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={rejectReason}
+                    onChange={(event) => setRejectReason(event.target.value)}
+                    className="mt-2 w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-red-400 focus:outline-none"
+                    placeholder="Expliquez pourquoi l'incident est rejeté..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleReject()}
+                    disabled={rejecting}
+                    className="mt-3 w-full rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {rejecting ? 'Rejet en cours...' : "Rejeter l'incident"}
+                  </button>
+                </div>
+              ) : null}
+
               <button
                 type="button"
                 onClick={() => navigate('/rt/home')}
@@ -339,7 +406,7 @@ export default function RTIncidentDetail() {
 
             {!canWriteReport ? (
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                Le RCA sera disponible après votre prise en charge.
+                Le RCA sera disponible après votre prise en charge et reste indisponible si l'incident est rejeté.
               </div>
             ) : null}
           </section>
@@ -363,6 +430,14 @@ export default function RTIncidentDetail() {
                 <span className="text-gray-500">Technicien</span>
                 <span className="font-semibold text-gray-900">{fullName(incident.handledBy)}</span>
               </div>
+              {incident.status === 'REJETE' ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-700">Motif de rejet</p>
+                  <p className="mt-2 text-sm leading-6 text-red-900">
+                    {incident.rejectionReason ?? 'Aucun motif enregistré.'}
+                  </p>
+                </div>
+              ) : null}
             </div>
           </section>
         </aside>

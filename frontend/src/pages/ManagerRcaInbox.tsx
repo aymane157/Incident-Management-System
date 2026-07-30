@@ -10,7 +10,6 @@ import {
   MessageSquareText,
   ReceiptText,
   RefreshCw,
-  Send,
   ShieldCheck,
   SquarePen,
   Users,
@@ -71,7 +70,6 @@ export default function ManagerRcaInbox() {
   const [statusMessage, setStatusMessage] = useState('');
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('mail');
   const [validating, setValidating] = useState(false);
-  const [simulating, setSimulating] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -210,23 +208,6 @@ export default function ManagerRcaInbox() {
       setError(err instanceof Error ? err.message : 'Impossible de valider le rapport RCA.');
     } finally {
       setValidating(false);
-    }
-  }
-
-  async function simulateDelivery() {
-    if (!selectedReport) return;
-
-    setSimulating(true);
-    setError('');
-    setStatusMessage('');
-
-    try {
-      const channelLabel = deliveryMode === 'mail' ? 'mail' : 'message dans l app';
-      setStatusMessage(
-        `Simulation ${channelLabel} pour ${selectedReport.incident?.reference ?? `#${selectedReport.id}`} terminee.`
-      );
-    } finally {
-      setSimulating(false);
     }
   }
 

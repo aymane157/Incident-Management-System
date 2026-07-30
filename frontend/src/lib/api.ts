@@ -65,6 +65,11 @@ export type NotificationDto = {
   createdAt?: string | null;
 };
 
+export type RejectIncidentRequest = {
+  reason: string;
+  teamMemberId: number;
+};
+
 export type IncidentDto = {
   id: number;
   reference: string;
@@ -231,6 +236,25 @@ export async function updateIncident(id: number, incident: IncidentDto): Promise
 export async function claimIncident(incidentId: number, userId: number): Promise<IncidentDto> {
   const response = await fetch(`${API_BASE_URL}/incidents/${incidentId}/claim/${userId}`, {
     method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function rejectIncidentWithReason(
+  reference: string,
+  request: RejectIncidentRequest,
+): Promise<IncidentDto> {
+  const response = await fetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/rejectIncidentWithReason`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
