@@ -52,6 +52,55 @@ type UserEditForm = {
 
 const USER_ROLES = ['ADMIN', 'CLIENT', 'INCIDENT_MANAGER', 'MEMBRE_EQUIPE', 'RESPONSABLE_TRAITEMENT'];
 
+type SlaRule = {
+  id: string;
+  criticality: 'CRITIQUE' | 'HAUTE' | 'MOYENNE' | 'BASSE';
+  responseTime: string;
+  resolutionTime: string;
+  escalationDelay: string;
+  owner: string;
+  active: boolean;
+};
+
+const INITIAL_SLA_RULES: SlaRule[] = [
+  {
+    id: 'sla-critical',
+    criticality: 'CRITIQUE',
+    responseTime: '15 min',
+    resolutionTime: '2 h',
+    escalationDelay: '30 min',
+    owner: 'Incident Manager',
+    active: true,
+  },
+  {
+    id: 'sla-high',
+    criticality: 'HAUTE',
+    responseTime: '30 min',
+    resolutionTime: '4 h',
+    escalationDelay: '1 h',
+    owner: 'Support Niveau 2',
+    active: true,
+  },
+  {
+    id: 'sla-medium',
+    criticality: 'MOYENNE',
+    responseTime: '1 h',
+    resolutionTime: '8 h',
+    escalationDelay: '2 h',
+    owner: 'Support Niveau 1',
+    active: true,
+  },
+  {
+    id: 'sla-low',
+    criticality: 'BASSE',
+    responseTime: '4 h',
+    resolutionTime: '24 h',
+    escalationDelay: '8 h',
+    owner: 'Support standard',
+    active: false,
+  },
+];
+
 function roleLabel(role?: string | null): string {
   if (!role) return 'Inconnu';
   const map: Record<string, string> = {
@@ -174,6 +223,7 @@ export default function AdminSettings() {
   });
   const [savingUser, setSavingUser] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [slaRules, setSlaRules] = useState<SlaRule[]>(INITIAL_SLA_RULES);
 
   useEffect(() => {
     setActiveTab(pathToTab(location.pathname));
@@ -332,6 +382,12 @@ export default function AdminSettings() {
   }, [searchQuery, teams]);
 
   const recentActivity = useMemo(() => buildRecentActivity(incidents), [incidents]);
+
+  function updateSlaRule(id: string, field: keyof SlaRule, value: string | boolean) {
+    setSlaRules((current) =>
+      current.map((rule) => (rule.id === id ? { ...rule, [field]: value } : rule))
+    );
+  }
 
   function goToTab(tab: Tab) {
     navigate(tabRoutes[tab]);
@@ -665,117 +721,78 @@ export default function AdminSettings() {
             )}
 
             {activeTab === 'sla' && (
-              <div className="flex-1 overflow-auto p-6">
-                <div className="mb-4 grid grid-cols-2 gap-4 xl:grid-cols-4">
-                  <div className="card-white p-4">
-                    <p className="text-xs uppercase tracking-widest text-gray-400">Tickets critiques</p>
-                    <p className="mt-1 text-2xl font-bold text-gray-900">
-                      {incidents.filter((incident) => incident.incidentLevel === 'CRITICAL').length}
-                    </p>
-                  </div>
-                  <div className="card-white p-4">
-                    <p className="text-xs uppercase tracking-widest text-gray-400">SLA a risque</p>
-                    <p className="mt-1 text-2xl font-bold text-gray-900">{slaAtRisk.length}</p>
-                  </div>
-                  <div className="card-white p-4">
-                    <p className="text-xs uppercase tracking-widest text-gray-400">Traites aujourd'hui</p>
-                    <p className="mt-1 text-2xl font-bold text-gray-900">{resolvedToday.length}</p>
-                  </div>
-                  <div className="card-white p-4">
-                    <p className="text-xs uppercase tracking-widest text-gray-400">Duree moyenne</p>
-                    <p className="mt-1 text-2xl font-bold text-gray-900">{averageResolution}</p>
-                  </div>
-                </div>
-
-                <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+              <div className="flex-1 overflow-hidden p-4">
+                <div className="grid h-full gap-4 xl:grid-cols-[1.15fr_0.85fr]">
                   <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-                    <div className="flex items-center gap-2 border-b border-gray-100 p-5">
+                    <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
                       <Clock className="h-4 w-4 text-gray-400" />
-                      <h3 className="font-bold text-gray-900">Tickets prioritaires</h3>
+                      <div>
+                        <h3 className="font-bold text-gray-900">SLA par criticite</h3>
+                        <p className="text-[11px] text-gray-400">Exemple modifiable, bref et lisible.</p>
+                      </div>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-sm">
-                        <thead className="text-gray-400">
-                          <tr>
-                            <th className="px-5 py-3 font-medium">REFERENCE</th>
-                            <th className="px-5 py-3 font-medium">APPLICATION</th>
-                            <th className="px-5 py-3 font-medium">STATUT</th>
-                            <th className="px-5 py-3 font-medium">SLA</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                          {[...incidents]
-                            .sort((left, right) => {
-                              const leftDate = getIncidentDeadline(left)?.getTime() ?? 0;
-                              const rightDate = getIncidentDeadline(right)?.getTime() ?? 0;
-                              return leftDate - rightDate;
-                            })
-                            .slice(0, 8)
-                            .map((incident) => {
-                              const deadline = getIncidentDeadline(incident);
-                              const isAtRisk = slaAtRisk.some((item) => item.id === incident.id);
+                    <div className="space-y-2 p-4">
+                      {slaRules.map((rule) => (
+                        <div
+                          key={rule.id}
+                          className="grid gap-2 rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-2 md:grid-cols-[110px_1fr_1fr_1fr_auto]"
+                        >
+                          <select
+                            value={rule.criticality}
+                            onChange={(event) =>
+                              updateSlaRule(rule.id, 'criticality', event.target.value as SlaRule['criticality'])
+                            }
+                            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-semibold text-gray-900 focus:border-primary focus:outline-none"
+                          >
+                            <option value="CRITIQUE">CRITIQUE</option>
+                            <option value="HAUTE">HAUTE</option>
+                            <option value="MOYENNE">MOYENNE</option>
+                            <option value="BASSE">BASSE</option>
+                          </select>
 
-                              return (
-                                <tr key={incident.id} className="hover:bg-gray-50/60">
-                                  <td className="px-5 py-3.5 font-medium text-gray-900">{incident.reference}</td>
-                                  <td className="px-5 py-3.5 text-gray-600">{incident.application?.name ?? '-'}</td>
-                                  <td className="px-5 py-3.5">
-                                    <span
-                                      className={[
-                                        'rounded-full px-2.5 py-1 text-[10px] font-bold',
-                                        incident.status === 'CLOSED' || incident.status === 'RESOLVED'
-                                          ? 'bg-success/10 text-success'
-                                          : incident.status === 'REJETE'
-                                            ? 'bg-danger/10 text-danger'
-                                            : isAtRisk
-                                              ? 'bg-warning/10 text-warning'
-                                              : 'bg-gray-100 text-gray-500',
-                                      ].join(' ')}
-                                    >
-                                      {incident.status}
-                                    </span>
-                                  </td>
-                                  <td className="px-5 py-3.5">
-                                    <div className="flex items-center gap-3">
-                                      <span
-                                        className={[
-                                          'text-xs font-semibold',
-                                          isAtRisk ? 'text-danger' : 'text-gray-600',
-                                        ].join(' ')}
-                                      >
-                                        {deadline ? formatRelativeTime(deadline) : 'Aucun SLA'}
-                                      </span>
-                                      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-gray-100">
-                                        <div
-                                          className={[
-                                            'h-full rounded-full',
-                                            incident.status === 'CLOSED' || incident.status === 'RESOLVED'
-                                              ? 'bg-success'
-                                              : isAtRisk
-                                                ? 'bg-danger'
-                                                : 'bg-warning',
-                                          ].join(' ')}
-                                          style={{ width: isAtRisk ? '95%' : '60%' }}
-                                        />
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                        </tbody>
-                      </table>
+                          <input
+                            value={rule.responseTime}
+                            onChange={(event) => updateSlaRule(rule.id, 'responseTime', event.target.value)}
+                            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-primary focus:outline-none"
+                            aria-label={`Prise en charge ${rule.criticality}`}
+                          />
+
+                          <input
+                            value={rule.resolutionTime}
+                            onChange={(event) => updateSlaRule(rule.id, 'resolutionTime', event.target.value)}
+                            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-primary focus:outline-none"
+                            aria-label={`Resolution ${rule.criticality}`}
+                          />
+
+                          <input
+                            value={rule.escalationDelay}
+                            onChange={(event) => updateSlaRule(rule.id, 'escalationDelay', event.target.value)}
+                            className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700 focus:border-primary focus:outline-none"
+                            aria-label={`Escalade ${rule.criticality}`}
+                          />
+
+                          <label className="flex items-center justify-between gap-2 text-[11px] font-semibold text-gray-500">
+                            <span className="whitespace-nowrap">Actif</span>
+                            <input
+                              type="checkbox"
+                              checked={rule.active}
+                              onChange={(event) => updateSlaRule(rule.id, 'active', event.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                          </label>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
                   <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-                    <div className="flex items-center gap-2 border-b border-gray-100 p-5">
+                    <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3">
                       <Activity className="h-4 w-4 text-gray-400" />
                       <h3 className="font-bold text-gray-900">Activite recente</h3>
                     </div>
-                    <div className="p-5">
-                      <div className="relative space-y-5 border-l-2 border-primary/20 pl-4">
-                        {recentActivity.map((activity) => (
+                    <div className="p-4">
+                      <div className="relative space-y-3 border-l-2 border-primary/20 pl-4">
+                        {recentActivity.slice(0, 4).map((activity) => (
                           <div key={activity.id} className="relative">
                             <div
                               className={`absolute -left-[21px] top-1 h-2.5 w-2.5 ${activity.tone} rounded-full ring-4 ring-white`}

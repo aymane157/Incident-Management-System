@@ -28,7 +28,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
 
-    @Value("${app-frontend}")
+    @Value("${app-frontend:http://localhost:5173}")
     private String frontend;
 
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
