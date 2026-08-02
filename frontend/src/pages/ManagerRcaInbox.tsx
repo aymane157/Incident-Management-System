@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   FileText,
   Loader2,
-  Mail,
   MessageSquareText,
   ReceiptText,
   RefreshCw,
@@ -18,7 +17,7 @@ import { useAuth } from '../lib/auth';
 import {
   fetchRcaReports,
   fetchUserById,
-  updateRcaReport,
+  updateRcaReportStatus,
   type RcaReportDto,
   type UserDto,
 } from '../lib/api';
@@ -191,12 +190,7 @@ export default function ManagerRcaInbox() {
     setStatusMessage('');
 
     try {
-      const updated = await updateRcaReport(selectedReport.id, {
-        ...selectedReport,
-        validatedByManager: true,
-        validatedBy: currentUser,
-        validatedAt: new Date().toISOString(),
-      });
+      const updated = await updateRcaReportStatus(selectedReport.id, currentUser.id, true);
 
       setReports((current) =>
         current.map((report) => (report.id === updated.id ? updated : report))
@@ -248,7 +242,7 @@ export default function ManagerRcaInbox() {
           <h1 className="mt-2 text-3xl font-bold text-gray-900">Boite de reception RCA</h1>
           <p className="mt-2 text-sm text-gray-500">
             Les rapports RCA des incidents geres par votre compte apparaissent ici des leur creation.
-            La validation est realiste, l&apos;envoi reste une demonstration frontend.
+         
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -269,14 +263,7 @@ export default function ManagerRcaInbox() {
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Actualisation...' : 'Actualiser'}
           </button>
-          <button
-            type="button"
-            disabled
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white opacity-60"
-          >
-            <Mail className="h-4 w-4" />
-            Envoi mail plus tard
-          </button>
+        
         </div>
       </div>
 
@@ -441,12 +428,7 @@ export default function ManagerRcaInbox() {
                       {reportStatus(selectedReport).label}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-                    <p className="text-[10px] uppercase tracking-[0.25em] text-gray-400">Valide par</p>
-                    <p className="mt-2 text-sm font-semibold text-gray-900">
-                      {fullName(selectedReport.validatedBy)}
-                    </p>
-                  </div>
+                  
                 </div>
 
                 <div className="space-y-3">
@@ -518,17 +500,7 @@ export default function ManagerRcaInbox() {
                 >
                   Mail
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setDeliveryMode('app')}
-                  className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                    deliveryMode === 'app'
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  App
-                </button>
+              
               </div>
 
               <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-700">

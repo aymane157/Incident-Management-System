@@ -1,6 +1,7 @@
 package com.entreprise.incidentmanagement.controller;
 
 import com.entreprise.incidentmanagement.dto.RcaReportDto;
+import com.entreprise.incidentmanagement.dto.RcaValidationRequest;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.service.RcaReportService;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,11 @@ public class RcaReportController {
     @PutMapping("/{id}")
     public RcaReportDto update(@PathVariable Long id, @RequestBody RcaReportDto reportDto) {
         return rcaReportService.updateDto(id, reportDto);
+    }
+
+    @PutMapping("/{id}/status")
+    public RcaReportDto updateStatus(@PathVariable Long id, @RequestBody RcaValidationRequest request) {
+        return rcaReportService.updateStatus(id, request.getIncidentManagerId(), request.isValidation());
     }
 
     @DeleteMapping("/{id}")

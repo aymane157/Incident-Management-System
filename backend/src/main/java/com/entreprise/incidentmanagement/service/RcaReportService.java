@@ -1,6 +1,7 @@
 package com.entreprise.incidentmanagement.service;
 
 import com.entreprise.incidentmanagement.domain.Incident;
+import com.entreprise.incidentmanagement.domain.IncidentStatus;
 import com.entreprise.incidentmanagement.domain.Notification;
 import com.entreprise.incidentmanagement.domain.NotificationType;
 import com.entreprise.incidentmanagement.domain.RcaReport;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -103,19 +105,80 @@ public class RcaReportService {
                 .orElseThrow(() -> new ResourceNotFoundException("RCA report not found with id " + id));
         RcaReport updated = DomainDtoMapper.toEntity(reportDto);
         updated.setId(existing.getId());
-        return DomainDtoMapper.toDto(rcaReportRepository.save(updated));
+        updated.setIncident(existing.getIncident());
+        updated.setAuthor(existing.getAuthor());
+        updated.setCreatedAt(existing.getCreatedAt());
+        updated.setValidatedAt(existing.getValidatedAt());
+        updated.setValidatedByManager(false);
+        updated.setValidatedBy(null);
+
+        RcaReport saved = rcaReportRepository.save(updated);
+        if (reportDto.isValidatedByManager() && reportDto.getValidatedBy() != null && reportDto.getValidatedBy().getId() != null) {
+            return updateStatus(saved.getId(), reportDto.getValidatedBy().getId(), true);
+        }
+        return DomainDtoMapper.toDto(saved);
     }
 
     @Transactional
-    public RcaReportDto updateStatus(Long reportId,Long incidentManagerId,boolean validation) {//validation
+    public RcaReportDto updateStatus(Long reportId, Long incidentManagerId, boolean validation) {
         RcaReport existing = findById(reportId)
                 .orElseThrow(() -> new ResourceNotFoundException("RCA report not found with id " + reportId));
+        if (!validation) {
+            return DomainDtoMapper.toDto(existing);
+        }
         User incidentManager= userRepository.findById(incidentManagerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + incidentManagerId));
+
+        if (existing.isValidatedByManager()) {
+            return DomainDtoMapper.toDto(existing);
+        }
+
         existing.setValidatedBy(incidentManager);
         existing.setValidatedByManager(validation);
-         rcaReportRepository.save(existing);
-         return DomainDtoMapper.toDto(existing);
+        existing.setValidatedAt(LocalDateTime.now());
+
+        Incident incident = existing.getIncident();
+        if (incident == null) {
+            throw new ResourceNotFoundException("Incident not found for RCA report " + reportId);
+        }
+
+        incident.setStatus(IncidentStatus.CLOSED);
+        incident.setValidatedAt(LocalDateTime.now());
+        incident.setClosedAt(LocalDateTime.now());
+        incidentRepository.save(incident);
+
+        RcaReport saved = rcaReportRepository.save(existing);
+        notifyClientOfValidation(saved);
+        return DomainDtoMapper.toDto(saved);
+    }
+
+    private void notifyClientOfValidation(RcaReport report) {
+        if (report == null || report.getIncident() == null) {
+            return;
+        }
+
+        String clientEmail = "eddamane356@gmail.com";
+        User recipient = report.getIncident().getCreatedBy();
+        if (recipient == null) {
+            recipient = report.getIncident().getIncidentManager();
+        }
+        if (recipient == null) {
+            recipient = report.getValidatedBy();
+        }
+        if (recipient == null) {
+            return;
+        }
+
+        Notification notification = Notification.builder()
+                .recipient(recipient)
+                .incident(report.getIncident())
+                .type(NotificationType.INCIDENT_CLOTURE)
+                .message("RCA a ete valide pour l'incident " + report.getIncident().getReference()
+                        + ". L'incident est maintenant ferme.")
+                .build();
+
+        NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
+        notificationService.sendMailNotification(notificationDto, clientEmail);
     }
 
 

@@ -337,6 +337,29 @@ export async function updateRcaReport(id: number, report: Record<string, unknown
   return response.json();
 }
 
+export async function updateRcaReportStatus(
+  id: number,
+  incidentManagerId: number,
+  validation: boolean,
+): Promise<RcaReportDto> {
+  const response = await fetch(`${API_BASE_URL}/rca-reports/${id}/status`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      incidentManagerId,
+      validation,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
 export async function fetchNotificationsByRecipient(userId: number): Promise<NotificationDto[]> {
   const response = await fetch(`${API_BASE_URL}/notifications/recipient/${userId}`);
 
