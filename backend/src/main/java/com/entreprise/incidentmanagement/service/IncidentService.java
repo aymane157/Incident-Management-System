@@ -3,6 +3,7 @@ package com.entreprise.incidentmanagement.service;
 import com.entreprise.incidentmanagement.domain.*;
 import com.entreprise.incidentmanagement.dto.ClientRequest;
 import com.entreprise.incidentmanagement.dto.NotificationDto;
+import com.entreprise.incidentmanagement.dto.RejectIncidentRequest;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.dto.IncidentDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
@@ -197,7 +198,7 @@ public class IncidentService {
                 ));
 
         Incident incident = Incident.builder()
-                .name(buildClientIncidentName(application, request.description()))
+                .name(buildClientIncidentName(application))
                 .description(request.description())
                 .status(IncidentStatus.NEW)
                 .application(application)
@@ -229,6 +230,70 @@ public class IncidentService {
         }
     }
 
+    @Transactional
+    public IncidentDto rejectIncidentWithReason(String reference, String reason,Long teamMemberId) {//for teammember
+        User teamMember = userRepository.findById(teamMemberId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + teamMemberId));
+        Incident incident = incidentRepository.findByReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with reference " + reference));
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Reason is required");
+        }
+        if (incident.getAssignedTeam() == null) {
+            throw new IllegalArgumentException("Incident is not assigned to a team");
+        }
+        if (teamMember.getTeam() == null || teamMember.getTeam().getId() == null) {
+            throw new IllegalArgumentException("Team member is not assigned to a team");
+        }
+        if (!incident.getAssignedTeam().getId().equals(teamMember.getTeam().getId())) {
+            throw new IllegalArgumentException("Incident is not assigned to the team member's team");
+        }
+        if (incident.getRcaReport() != null) {
+            throw new IllegalStateException("Incident already has an RCA report");
+        }
+
+        incident.setHandledBy(teamMember);
+        incident.setStatus(IncidentStatus.REJETE);
+        incident.setAssignedAt(LocalDateTime.now());
+        incident.setClosedAt(LocalDateTime.now());
+        incident.setRejectionReason(reason);
+
+        Incident savedIncident = incidentRepository.save(incident);
+        notifyIncidentManagerOfRejection(savedIncident, teamMember, reason);
+        return DomainDtoMapper.toDto(savedIncident);
+    }
+
+    /*public IncidentDto closeIncident(){
+
+    }*/
+
+    private void notifyIncidentManagerOfRejection(Incident incident, User teamMember, String reason) {
+        User incidentManager = incident.getIncidentManager();
+        if (incidentManager == null) {
+            return;
+        }
+
+        String managerEmail = "aymanemwa@gmail.com";
+        String reference = incident.getReference() == null ? "" : incident.getReference();
+        String actorName = teamMember.getFirstName() == null && teamMember.getLastName() == null
+                ? "a team member"
+                : (teamMember.getFirstName() == null ? "" : teamMember.getFirstName() + " ")
+                + (teamMember.getLastName() == null ? "" : teamMember.getLastName());
+        String message = "Incident " + reference + " rejected by " + actorName.trim() + ". Reason: " + reason;
+
+        Notification notification = Notification.builder()
+                .recipient(incidentManager)
+                .incident(incident)
+                .type(NotificationType.INCIDENT_REJETE)
+                .message(message)
+                .build();
+
+        NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
+        if (managerEmail != null && !managerEmail.isBlank()) {
+            notificationService.sendMailNotification(notificationDto, managerEmail);
+        }
+    }
+
 
     private NotificationDto buildClientIncidentNotification(Incident savedIncident, User createdBy) {
         if (createdBy.getEmail() == null || createdBy.getEmail().isBlank()) {
@@ -250,15 +315,12 @@ public class IncidentService {
         return DomainDtoMapper.toDto(notification);
     }
 
-    private String buildClientIncidentName(Application application, String description) {
+    private String buildClientIncidentName(Application application) {
         String appName = application.getName() == null || application.getName().isBlank()
                 ? "application"
                 : application.getName();
-        String shortDescription = description.trim();
-        if (shortDescription.length() > 80) {
-            shortDescription = shortDescription.substring(0, 80).trim();
-        }
-        return "Client incident - " + appName + " - " + shortDescription;
+
+        return "Client incident - " + appName ;
     }
     private LocalDateTime calculateSla(IncidentLevel level) {
         if(level==null){

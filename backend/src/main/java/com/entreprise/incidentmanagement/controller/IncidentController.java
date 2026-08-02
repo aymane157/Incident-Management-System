@@ -3,6 +3,7 @@ package com.entreprise.incidentmanagement.controller;
 import com.entreprise.incidentmanagement.domain.IncidentStatus;
 import com.entreprise.incidentmanagement.dto.ClientRequest;
 import com.entreprise.incidentmanagement.dto.IncidentDto;
+import com.entreprise.incidentmanagement.dto.RejectIncidentRequest;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.service.IncidentService;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,11 @@ public class IncidentController {
     @PostMapping("/{id}/claim/{userId}")
     public IncidentDto claimIncident(@PathVariable Long id, @PathVariable Long userId) {
         return incidentService.claimIncident(id, userId);
+    }
+
+    @PostMapping("/{reference}/rejectIncidentWithReason")
+    public IncidentDto rejectIncidentWithReason(@PathVariable String reference, @RequestBody RejectIncidentRequest request) {
+        return incidentService.rejectIncidentWithReason(reference, request.reason(), request.teamMemberId());
     }
 
     @PostMapping

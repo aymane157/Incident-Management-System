@@ -107,9 +107,16 @@ export default function ManagerHome() {
 
   const firstName = user?.name?.split(' ')[0] ?? 'Manager';
 
-  const rcaNotifications = useMemo(() => {
+  const incidentNotifications = useMemo(() => {
     return notifications
-      .filter((item) => String(item.message ?? '').toLowerCase().includes('rca'))
+      .filter((item) => {
+        const message = String(item.message ?? '').toLowerCase();
+        return item.type === 'MESSAGE_RECU'
+          || item.type === 'INCIDENT_REJETE'
+          || message.includes('rca')
+          || message.includes('reject')
+          || message.includes('rejet');
+      })
       .sort((left, right) => {
         const leftDate = new Date(left.createdAt ?? 0).getTime();
         const rightDate = new Date(right.createdAt ?? 0).getTime();
@@ -189,9 +196,9 @@ export default function ManagerHome() {
           </div>
           <button className="relative p-2 rounded-full hover:bg-gray-100 text-gray-600">
             <Bell className="w-5 h-5" />
-            {rcaNotifications.length ? (
+            {incidentNotifications.length ? (
               <span className="absolute top-1 right-1 min-w-4 rounded-full bg-danger px-1 text-[10px] font-bold text-white">
-                {rcaNotifications.length}
+                {incidentNotifications.length}
               </span>
             ) : (
               <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
@@ -236,12 +243,12 @@ export default function ManagerHome() {
       <div className="card-white p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
               <MessageSquareText className="w-4 h-4 text-primary" />
-              <h3 className="font-bold text-gray-900">Notifications RCA</h3>
+              <h3 className="font-bold text-gray-900">Notifications incident</h3>
             </div>
             <p className="mt-1 text-sm text-gray-500">
-              Les nouveaux rapports apparaissent ici quand ils sont soumis.
+              Les RCA et les rejets d'incidents apparaissent ici quand ils sont soumis.
             </p>
           </div>
           <button
@@ -275,9 +282,9 @@ export default function ManagerHome() {
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             {notificationsError}
           </div>
-        ) : rcaNotifications.length ? (
+        ) : incidentNotifications.length ? (
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {rcaNotifications.slice(0, 3).map((notification) => (
+            {incidentNotifications.slice(0, 3).map((notification) => (
               <div key={notification.id} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -303,7 +310,7 @@ export default function ManagerHome() {
           </div>
         ) : (
           <div className="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">
-            Aucun RCA notifie pour le moment.
+            Aucune notification d'incident pour le moment.
           </div>
         )}
       </div>

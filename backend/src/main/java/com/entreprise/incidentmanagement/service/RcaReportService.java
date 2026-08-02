@@ -10,6 +10,7 @@ import com.entreprise.incidentmanagement.dto.RcaReportDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
 import com.entreprise.incidentmanagement.repository.IncidentRepository;
 import com.entreprise.incidentmanagement.repository.RcaReportRepository;
+import com.entreprise.incidentmanagement.repository.UserRepository;
 import com.entreprise.incidentmanagement.service.NotificationService;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class RcaReportService {
     private final RcaReportRepository rcaReportRepository;
     private final IncidentRepository incidentRepository;
     private final NotificationService notificationService;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public List<RcaReport> findAll() {
@@ -103,6 +105,19 @@ public class RcaReportService {
         updated.setId(existing.getId());
         return DomainDtoMapper.toDto(rcaReportRepository.save(updated));
     }
+
+    @Transactional
+    public RcaReportDto updateStatus(Long reportId,Long incidentManagerId,boolean validation) {//validation
+        RcaReport existing = findById(reportId)
+                .orElseThrow(() -> new ResourceNotFoundException("RCA report not found with id " + reportId));
+        User incidentManager= userRepository.findById(incidentManagerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + incidentManagerId));
+        existing.setValidatedBy(incidentManager);
+        existing.setValidatedByManager(validation);
+         rcaReportRepository.save(existing);
+         return DomainDtoMapper.toDto(existing);
+    }
+
 
     @Transactional
     public void deleteById(Long id) {
