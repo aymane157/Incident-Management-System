@@ -225,8 +225,8 @@ export default function CreateIncident() {
               </div>
             ) : null}
 
-            <div className="flex gap-8">
-              <div className="flex-1 space-y-6">
+            <div className="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
+              <div className="min-w-0 space-y-6">
                 <div>
                   <label className="text-xs font-medium text-gray-500 block mb-1">
                   Exemple:  ID du ticket (généré automatiquement)
@@ -323,9 +323,9 @@ export default function CreateIncident() {
                 </div>
               </div>
 
-              <div className="flex-1">
+              <div className="min-w-0 self-start">
                 <label className="text-sm font-medium text-gray-700 mb-1.5 block">Pièces jointes</label>
-                <label className="border-2 border-dashed border-gray-200 rounded-2xl h-48 flex flex-col items-center justify-center bg-gray-50 hover:bg-primary/5 hover:border-primary/30 transition-colors cursor-pointer group">
+                <label className="border-2 border-dashed border-gray-200 rounded-2xl h-48 md:h-56 flex flex-col items-center justify-center bg-gray-50 hover:bg-primary/5 hover:border-primary/30 transition-colors cursor-pointer group overflow-hidden flex-shrink-0">
                   <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 text-primary">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
@@ -355,11 +355,11 @@ export default function CreateIncident() {
                   Formats acceptés : PNG, JPG, GIF, WEBP, PDF, DOC, DOCX (max. 5 Mo par fichier)
                 </p>
                 {attachments.length > 0 ? (
-                  <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
+                  <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600 flex flex-col min-h-0">
                     <p className="font-semibold text-gray-700 mb-2">
                       Fichiers sélectionnés ({attachments.length})
                     </p>
-                    <ul className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <ul className="space-y-2 max-h-64 overflow-y-auto pr-1">
                       {attachments.map((file) => {
                         const key = fileKey(file);
                         const previewUrl = previewUrls[key];
