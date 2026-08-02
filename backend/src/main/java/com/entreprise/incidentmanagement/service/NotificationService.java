@@ -1,6 +1,7 @@
 package com.entreprise.incidentmanagement.service;
 
 import com.entreprise.incidentmanagement.domain.Notification;
+import com.entreprise.incidentmanagement.domain.NotificationType;
 import com.entreprise.incidentmanagement.domain.User;
 import com.entreprise.incidentmanagement.dto.NotificationDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
@@ -21,6 +22,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 
+import static com.entreprise.incidentmanagement.domain.NotificationType.*;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -33,39 +36,80 @@ public class NotificationService {
 
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
-    public NotificationDto sendMailNotification(NotificationDto notificationDto,String toEmail) {
+    public NotificationDto sendMailNotification(NotificationDto notificationDto, String toEmail) {
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+
+        if (mailSender == null) {
+            log.warn(
+                    "Mail sender is not configured, skipping notification email for incident {}",
+                    notificationDto.getIncident() != null
+                            ? notificationDto.getIncident().getReference()
+                            : null
+            );
+            return notificationDto;
+        }
+
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+
+        // Use a valid email address here
+        mailMessage.setFrom("no-reply@DxcIncident.com");
+        mailMessage.setTo(toEmail);
+
+        NotificationType type = notificationDto.getType();
+
+        String subject;
+        StringBuilder message = new StringBuilder();
+
+        // Customize subject based on notification type
+        if (type == INCIDENT_REJETE
+                || type == INCIDENT_AFFECTE
+                || type == INCIDENT_RESOLU
+                || type == INCIDENT_CLOTURE) {
+
+            subject = type.name()
+                    + " - Incident "
+                    + notificationDto.getIncident().getReference()
+                    + " (" + notificationDto.getIncident().getIncidentLevel() + ")";
+        } else {
+            subject = type.name()
+                    + " - Incident "
+                    + notificationDto.getIncident().getReference();
+        }
+
+        message.append(notificationDto.getMessage());
+
+        if (notificationDto.getIncident().getSlaDeadline() != null  && type !=INCIDENT_REJETE && type !=INCIDENT_CLOTURE) {
+            String sla = formatDate(notificationDto.getIncident().getSlaDeadline());
+
+            message.append("\n\n")
+                    .append("SLA Deadline: ")
+                    .append(sla);
+        }
+
+        message.append("\n\n")
+                .append("View incident: ")
+                .append(frontend)
+                .append("/incidents/")
+                .append(notificationDto.getIncident().getReference());
+
+        mailMessage.setSubject(subject);
+        mailMessage.setText(message.toString());
+
+        log.info("Sending email to {}", toEmail);
+        mailSender.send(mailMessage);
+
+        return notificationDto;
+    }
+
+    /*public NotificationDto sendRcaMailValidation(NotificationDto notificationDto,String toEmail) {
         JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
         if (mailSender == null) {
             log.warn("Mail sender is not configured, skipping notification email for incident {}",
                     notificationDto.getIncident() != null ? notificationDto.getIncident().getReference() : null);
             return notificationDto;
         }
-        String sla="";
-        SimpleMailMessage mailMessage = new SimpleMailMessage();
-        mailMessage.setFrom("IncidentSystem");
-        if(notificationDto.getIncident().getSlaDeadline() != null) {
-           sla=formatDate(notificationDto.getIncident().getSlaDeadline());
-            mailMessage.setSubject(notificationDto.getType().name() +" "+ "Incident:" + notificationDto.getIncident().getReference() +"With Criticality"+" "+notificationDto.getIncident().getIncidentLevel());
-        }else{
-            mailMessage.setSubject(notificationDto.getType().name() + "Incident:" + notificationDto.getIncident().getReference());
-        }
 
-        String message = notificationDto.getMessage()
-                + "\n\n"
-                +"SLA Deadline : "
-                + sla
-                + "\n\n"
-                + "View incident: "
-                + frontend
-                + "/incidents/"
-                + notificationDto.getIncident().getReference();
-        mailMessage.setText(message);
-        mailMessage.setTo(toEmail);
-        log.info("Sending email to {}", toEmail);
-        mailSender.send(mailMessage);
-
-        return notificationDto;
-    }
+    }*/
     private String formatDate(LocalDateTime date) {
         DateTimeFormatter formatter =
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

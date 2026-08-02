@@ -274,6 +274,7 @@ public class IncidentService {
         }
 
         String managerEmail = "aymanemwa@gmail.com";
+        String clientEmail="eddamane356@gmail.com";
         String reference = incident.getReference() == null ? "" : incident.getReference();
         String actorName = teamMember.getFirstName() == null && teamMember.getLastName() == null
                 ? "a team member"
@@ -291,6 +292,7 @@ public class IncidentService {
         NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
         if (managerEmail != null && !managerEmail.isBlank()) {
             notificationService.sendMailNotification(notificationDto, managerEmail);
+            notificationService.sendMailNotification(notificationDto, clientEmail);
         }
     }
 

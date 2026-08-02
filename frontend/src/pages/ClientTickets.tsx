@@ -9,7 +9,7 @@ const statusLabels: Record<IncidentDto['status'], string> = {
   VALIDATED: 'Valide',
   IN_PROGRESS: 'En cours',
   RESOLVED: 'Resolu',
-  CLOSED: 'Clos',
+  CLOSED: 'Resolu',
   REJETE: 'Rejete',
 };
 

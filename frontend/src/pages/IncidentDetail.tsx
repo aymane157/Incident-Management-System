@@ -263,7 +263,7 @@ export default function IncidentDetail() {
                     ['Statut', incident.status],
                     ['Priorité', incident.incidentLevel ?? 'Non défini'],
                     ['Créé par', fullName(incident.createdBy)],
-                    ['Assigné à', fullName(incident.handledBy)],
+                    ['Responsable de traitement', fullName(incident.handledBy)],
                   ].map(([label, value]) => (
                     <div key={label} className="flex items-center justify-between gap-4 text-sm">
                       <span className="text-gray-500">{label}</span>
@@ -367,28 +367,7 @@ export default function IncidentDetail() {
             </div>
           </section>
 
-          <section className="card-white p-6">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              <h2 className="text-lg font-bold text-gray-900">Actions rapides</h2>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <button className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90">
-                Ouvrir le dossier incident
-              </button>
-              <button className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
-                Copier la référence
-              </button>
-              <button className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
-                Notifier l’équipe
-              </button>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-              Cette page est protégée côté frontend pour les rôles internes. La vraie preauth backend pourra être ajoutée ensuite.
-            </div>
-          </section>
+          
         </aside>
       </div>
     </div>
