@@ -56,6 +56,20 @@ public class RcaReportController {
         return rcaReportService.updateStatus(id, request.getIncidentManagerId(), request.isValidation());
     }
 
+    @GetMapping("/client/{clientId}")
+    public List<RcaReportDto> findByClient(@PathVariable Long clientId) {
+        return rcaReportService.findByClientIdDto(clientId);
+    }
+
+    @PostMapping("/{id}/send-to-client/{managerId}")
+    public RcaReportDto sendToClient(@PathVariable Long id, @PathVariable Long managerId) {
+        return rcaReportService.sendToClient(id, managerId);
+    }
+
+    @PostMapping("/{id}/client-rejection")
+    public RcaReportDto rejectByClient(@PathVariable Long id, @RequestBody ClientRcaRejectionRequest request) {
+        return rcaReportService.rejectByClient(id, request.clientId(), request.reason());
+    }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (rcaReportService.findById(id).isEmpty()) {

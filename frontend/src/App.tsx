@@ -4,6 +4,7 @@ import type { UserRole } from './lib/auth';
 import Login from './pages/Login';
 import ClientHome from './pages/ClientHome';
 import ClientTickets from './pages/ClientTickets';
+import ClientRcas from './pages/ClientRcas';
 import CreateIncident from './pages/CreateIncident';
 import IncidentWorkspace from './pages/IncidentWorkspace';
 import AdminSettings from './pages/AdminSettings';
@@ -15,39 +16,30 @@ import RTRcaReport from './pages/RTRcaReport';
 import ManagerRcaInbox from './pages/ManagerRcaInbox';
 import Sidebar from './components/Sidebar';
 
-// ─── Role → default home route ────────────────────────────────────────────────
-
 function homeRoute(role: UserRole): string {
   switch (role) {
-    case 'client':  return '/client/home';
-    case 'manager': return '/manager/home';
-    case 'admin':   return '/admin';
-    case 'rt':      return '/rt/home';
+    case 'client':
+      return '/client/home';
+    case 'manager':
+      return '/manager/home';
+    case 'admin':
+      return '/admin';
+    case 'rt':
+      return '/rt/home';
   }
 }
 
-// ─── Layout ───────────────────────────────────────────────────────────────────
-
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
-      <div className="flex-1 flex flex-col ml-64 overflow-hidden relative">
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
+      <div className="relative ml-64 flex flex-1 flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );
 }
 
-// ─── Protected Route ──────────────────────────────────────────────────────────
-
-/**
- * Redirects to /login if the user is not authenticated.
- * If `allowedRoles` is provided, redirects to the user's own home
- * when their role is not in the allowed list.
- */
 function ProtectedRoute({
   children,
   allowedRoles,
@@ -68,17 +60,13 @@ function ProtectedRoute({
   return <>{children}</>;
 }
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
-
 function AppRoutes() {
   const { user } = useAuth();
 
   return (
     <Routes>
-      {/* Public */}
       <Route path="/login" element={<Login />} />
 
-      {/* ── CLIENT ─────────────────────────────────────────────────── */}
       <Route
         path="/client/home"
         element={
@@ -104,6 +92,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/client/rca"
+        element={
+          <ProtectedRoute allowedRoles={['client']}>
+            <AppLayout><ClientRcas /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/client/kb"
         element={
           <ProtectedRoute allowedRoles={['client']}>
@@ -112,7 +108,6 @@ function AppRoutes() {
         }
       />
 
-      {/* ── INCIDENT MANAGER ───────────────────────────────────────── */}
       <Route
         path="/manager/home"
         element={
@@ -138,7 +133,6 @@ function AppRoutes() {
         }
       />
 
-      {/* ── ADMIN ──────────────────────────────────────────────────── */}
       <Route
         path="/admin"
         element={
@@ -180,7 +174,6 @@ function AppRoutes() {
         }
       />
 
-      {/* ── RESPONSABLE DE TRAITEMENT ──────────────────────────────── */}
       <Route
         path="/rt/home"
         element={
@@ -213,29 +206,18 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/incidents/:referenceId"
-        element={
-          <AppLayout><IncidentDetail /></AppLayout>
-        }
-      />
 
-      {/* Default redirect */}
+      <Route path="/incidents/:referenceId" element={<AppLayout><IncidentDetail /></AppLayout>} />
+
       <Route
         path="*"
-        element={
-          user
-            ? <Navigate to={homeRoute(user.role)} replace />
-            : <Navigate to="/login" replace />
-        }
+        element={user ? <Navigate to={homeRoute(user.role)} replace /> : <Navigate to="/login" replace />}
       />
     </Routes>
   );
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
-
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <Router>
@@ -244,5 +226,3 @@ function App() {
     </AuthProvider>
   );
 }
-
-export default App;

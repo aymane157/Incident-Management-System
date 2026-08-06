@@ -49,10 +49,10 @@ public class BootstrapDataRunner implements CommandLineRunner {
         Team securite = createTeamIfMissing("Support Securite", FunctionRole.SECURITE, "Equipe en charge de la securite");
         Team baseDonnee = createTeamIfMissing("Support Base de Donnee", FunctionRole.BASE_DONNEE, "Equipe en charge des bases de donnees");
 
-        User admin = createUserIfMissing("Admin", "DXC", "admin@dxc.com", "admin123", Role.ADMIN, securite);
-        User jean = createUserIfMissing("Jean", "Dupont", "jean.dupont@dxc.com", "client123", Role.CLIENT, null);
-        User marie = createUserIfMissing("Marie", "Martin", "marie.martin@dxc.com", "manager123", Role.INCIDENT_MANAGER, applicatif);
-        User thomas = createUserIfMissing("Thomas", "Bernard", "thomas.bernard@dxc.com", "team123", Role.MEMBRE_EQUIPE, systeme);
+        User admin = createUserIfMissing("Admin", "DXC", "admin_xd@dxc.com", "admin123", Role.ADMIN, securite);
+        User jean = createUserIfMissing("Jean", "Dupont", "eddadd361@gmail.com", "client123", Role.CLIENT, null);
+        User marie = createUserIfMissing("Marie", "Martin", "aymanemwa@gmail.com", "manager123", Role.INCIDENT_MANAGER, applicatif);
+        User thomas = createUserIfMissing("Thomas", "Bernard", "aymanemwa2@gmail.com", "team123", Role.MEMBRE_EQUIPE, systeme);
         User amina = createUserIfMissing("Amina", "El Idrissi", "amina.elidrissi@dxc.com", "rt123", Role.RESPONSABLE_TRAITEMENT, reseau);
         User nadia = createUserIfMissing("Nadia", "Benkhaled", "nadia.benkhaled@dxc.com", "base123", Role.MEMBRE_EQUIPE, baseDonnee);
 

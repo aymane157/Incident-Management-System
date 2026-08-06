@@ -22,4 +22,9 @@ public class RcaReportDto {
     private UserDto validatedBy;
     private LocalDateTime createdAt;
     private LocalDateTime validatedAt;
+    private boolean sentToClient;
+    private LocalDateTime sentToClientAt;
+    private boolean rejectedByClient;
+    private String clientRejectionReason;
+    private LocalDateTime clientRejectedAt;
 }

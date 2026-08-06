@@ -18,6 +18,7 @@ import {
   fetchRcaReports,
   fetchUserById,
   updateRcaReportStatus,
+  sendRcaToClient,
   type RcaReportDto,
   type UserDto,
 } from '../lib/api';
@@ -69,6 +70,7 @@ export default function ManagerRcaInbox() {
   const [statusMessage, setStatusMessage] = useState('');
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('mail');
   const [validating, setValidating] = useState(false);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -202,6 +204,21 @@ export default function ManagerRcaInbox() {
       setError(err instanceof Error ? err.message : 'Impossible de valider le rapport RCA.');
     } finally {
       setValidating(false);
+    }
+  }
+
+  async function handleSendToClient() {
+    if (!selectedReport || !currentUser) return;
+    setSending(true);
+    setError('');
+    try {
+      const updated = await sendRcaToClient(selectedReport.id, currentUser.id);
+      setReports(current => current.map(report => report.id === updated.id ? updated : report));
+      setStatusMessage(`RCA ${updated.incident?.reference ?? `#${updated.id}`} envoye au client.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible d'envoyer le RCA au client.");
+    } finally {
+      setSending(false);
     }
   }
 
@@ -486,6 +503,10 @@ export default function ManagerRcaInbox() {
               >
                 {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
                 {selectedReport?.validatedByManager ? 'RCA deja valide' : validating ? 'Validation...' : 'Valider le RCA'}
+              </button>
+
+              <button type="button" onClick={handleSendToClient} disabled={!selectedReport?.validatedByManager || sending} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
+                {sending ? 'Envoi...' : selectedReport?.sentToClient ? 'Renvoyer au client' : 'Envoyer au client'}
               </button>
 
               <div className="grid grid-cols-2 gap-2">

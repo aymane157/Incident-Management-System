@@ -54,6 +54,11 @@ export type RcaReportDto = {
   validatedBy?: UserDto | null;
   createdAt?: string | null;
   validatedAt?: string | null;
+  sentToClient?: boolean;
+  sentToClientAt?: string | null;
+  rejectedByClient?: boolean;
+  clientRejectionReason?: string | null;
+  clientRejectedAt?: string | null;
 };
 
 export type NotificationDto = {
@@ -68,6 +73,11 @@ export type NotificationDto = {
 export type RejectIncidentRequest = {
   reason: string;
   teamMemberId: number;
+};
+
+export type RejectIncidentByManagerRequest = {
+  reason: string;
+  managerId: number;
 };
 
 export type IncidentDto = {
@@ -264,6 +274,37 @@ export async function rejectIncidentWithReason(
   return response.json();
 }
 
+export async function rejectIncidentByManager(
+  reference: string,
+  request: RejectIncidentByManagerRequest,
+): Promise<IncidentDto> {
+  const response = await fetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/rejectIncidentByManager`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
+export async function reopenRejectedIncident(reference: string, managerId: number): Promise<IncidentDto> {
+  const response = await fetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/reopenRejectedIncident/${managerId}`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
+
 export function getAttachmentUrl(attachmentId: number): string {
   return `${API_BASE_URL}/attachments/${attachmentId}/file`;
 }
@@ -360,6 +401,24 @@ export async function updateRcaReportStatus(
   return response.json();
 }
 
+
+export async function sendRcaToClient(id: number, managerId: number): Promise<RcaReportDto> {
+  const response = await fetch(`${API_BASE_URL}/rca-reports/${id}/send-to-client/${managerId}`, { method: 'POST' });
+  if (!response.ok) throw new Error(await parseError(response));
+  return response.json();
+}
+
+export async function fetchClientRcaReports(clientId: number): Promise<RcaReportDto[]> {
+  const response = await fetch(`${API_BASE_URL}/rca-reports/client/${clientId}`);
+  if (!response.ok) throw new Error(await parseError(response));
+  return response.json();
+}
+
+export async function rejectRcaByClient(id: number, clientId: number, reason: string): Promise<RcaReportDto> {
+  const response = await fetch(`${API_BASE_URL}/rca-reports/${id}/client-rejection`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId, reason }) });
+  if (!response.ok) throw new Error(await parseError(response));
+  return response.json();
+}
 export async function fetchNotificationsByRecipient(userId: number): Promise<NotificationDto[]> {
   const response = await fetch(`${API_BASE_URL}/notifications/recipient/${userId}`);
 
@@ -369,3 +428,4 @@ export async function fetchNotificationsByRecipient(userId: number): Promise<Not
 
   return response.json();
 }
+

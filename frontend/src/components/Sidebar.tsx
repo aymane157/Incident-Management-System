@@ -12,6 +12,7 @@ const clientNav: NavItem[] = [
   { name: 'Vue d\'ensemble',       path: '/client/home',   icon: LayoutDashboard },
   { name: 'Mes tickets',           path: '/client/tickets', icon: Ticket          },
   { name: 'Nouveau ticket',        path: '/client/create',  icon: PlusCircle      },
+  { name: 'RCA reçus',              path: '/client/rca',     icon: FileText        },
 
 ];
 

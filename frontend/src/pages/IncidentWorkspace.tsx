@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
+import { useAuth } from '../lib/auth';
 import {
   fetchManagerIncidents,
   fetchTeams,
@@ -23,6 +24,8 @@ import {
   IncidentStatus,
   STATIC_INCIDENT_MANAGER_ID,
   TeamDto,
+  rejectIncidentByManager,
+  reopenRejectedIncident,
   updateIncident,
 } from '../lib/api';
 
@@ -68,7 +71,7 @@ function fullName(user?: { firstName?: string | null; lastName?: string | null }
 }
 
 function formatDateTime(value?: string | null): string {
-  if (!value) return '—';
+  if (!value) return '-' ;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('fr-FR', {
@@ -183,7 +186,7 @@ function EditIncidentModal({
             </span>
           </div>
           <p className="mt-1 text-sm text-white/80">
-            {incident.application?.name ?? 'Application'} · {getIncidentClient(incident)}
+            {incident.application?.name ?? 'Application'} ? {getIncidentClient(incident)}
           </p>
         </div>
         <button onClick={onClose} className="p-1 text-white/70 transition-colors hover:text-white" aria-label="Fermer">
@@ -195,7 +198,7 @@ function EditIncidentModal({
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Incident</p>
           <h3 className="mt-2 text-2xl font-bold text-gray-900">{incident.name ?? 'Incident sans titre'}</h3>
-          <p className="mt-4 text-sm leading-7 text-gray-700">{incident.description ?? '—'}</p>
+          <p className="mt-4 text-sm leading-7 text-gray-700">{incident.description ?? '-'}</p>
         </div>
 
         <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
@@ -240,7 +243,7 @@ function EditIncidentModal({
                       {attachment.fileName ?? `Piece jointe #${attachment.id}`}
                     </p>
                     <p className="mt-1 text-xs text-gray-500">
-                      {attachment.contentType ?? 'type inconnu'} ·{' '}
+                      {attachment.contentType ?? 'type inconnu'} ?{' '}
                       {attachment.fileSize ? `${Math.round(attachment.fileSize / 1024)} KB` : 'taille inconnue'}
                     </p>
                   </div>
@@ -279,6 +282,7 @@ function EditIncidentModal({
 }
 
 export default function IncidentWorkspace() {
+  const { user } = useAuth();
   const [incidents, setIncidents] = useState<IncidentDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -352,6 +356,40 @@ export default function IncidentWorkspace() {
     }
   };
 
+  const handleRejectIncident = async (incident: IncidentDto) => {
+    const managerId = user?.id ?? STATIC_INCIDENT_MANAGER_ID;
+    const reason = window.prompt(`Motif du rejet pour ${incident.reference}`);
+    if (!reason || !reason.trim()) {
+      return;
+    }
+
+    try {
+      const saved = await rejectIncidentByManager(incident.reference, {
+        managerId,
+        reason: reason.trim(),
+      });
+      setIncidents(prev => prev.map(item => (item.id === saved.id ? saved : item)));
+      setSelectedId(saved.id);
+      setSuccessMessage(`Incident ${saved.reference} rejeté.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reject incident');
+    }
+  };
+
+  const handleReopenIncident = async (incident: IncidentDto) => {
+    const managerId = user?.id ?? STATIC_INCIDENT_MANAGER_ID;
+
+    try {
+      const saved = await reopenRejectedIncident(incident.reference, managerId);
+      setIncidents(prev => prev.map(item => (item.id === saved.id ? saved : item)));
+      setSelectedId(saved.id);
+      setSuccessMessage(`Incident ${saved.reference} reouvert.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reopen incident');
+    }
+  };
   const openEditIncident = (incident: IncidentDto) => {
     setSelectedId(null);
     setEditIncident(incident);
@@ -495,7 +533,7 @@ export default function IncidentWorkspace() {
                         onClick={() => setSelectedId(incident.id)}
                       >
                         <td className="px-5 py-3.5 font-medium text-gray-900">{incident.reference}</td>
-                        <td className="px-5 py-3.5 text-gray-600">{incident.application?.name ?? '—'}</td>
+                        <td className="px-5 py-3.5 text-gray-600">{incident.application?.name ?? '-'}</td>
                         <td className="px-5 py-3.5 text-gray-600">{getIncidentClient(incident)}</td>
                         <td className="px-5 py-3.5">
                           <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${statusClass[incident.status]}`}>
@@ -515,7 +553,7 @@ export default function IncidentWorkspace() {
                         <td className="px-5 py-3.5">
                           {incident.assignedTeam?.name || incident.handledBy ? (
                             <div>
-                              <p className="text-xs font-medium text-gray-800">{incident.assignedTeam?.name ?? '—'}</p>
+                              <p className="text-xs font-medium text-gray-800">{incident.assignedTeam?.name ?? '-'}</p>
                               <p className="text-[10px] text-gray-400">{fullName(incident.handledBy)}</p>
                             </div>
                           ) : (
@@ -529,6 +567,12 @@ export default function IncidentWorkspace() {
                           >
                             <Pencil className="h-3.5 w-3.5" />
                             Modifier
+                          </button>
+                          <button
+                            onClick={() => void handleRejectIncident(incident)}
+                            className="ml-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger/5"
+                          >
+                            Rejeter
                           </button>
                         </td>
                       </tr>
@@ -563,16 +607,23 @@ export default function IncidentWorkspace() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-white/75">
-                {selectedIncident.application?.name ?? 'Application'} · {getIncidentClient(selectedIncident)}
+                {selectedIncident.application?.name ?? 'Application'} ? {getIncidentClient(selectedIncident)}
               </p>
             </div>
-            <button
-              onClick={() => setSelectedId(null)}
-              className="rounded-full border border-white/15 p-1.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-              aria-label="Fermer le detail de l incident"
-            >
-              <X className="h-4 w-4" />
-            </button>
+                <button
+                  onClick={() => openEditIncident(selectedIncident)}
+                  className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary/90"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  Modifier
+                </button>
+                <button
+                  onClick={() => void handleRejectIncident(selectedIncident)}
+                  className="inline-flex items-center gap-1 rounded-full border border-danger/30 bg-danger/5 px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/10"
+                >
+                  Rejeter
+                </button>
+                <X className="h-4 w-4" />
           </div>
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto bg-slate-50 p-4">
@@ -593,9 +644,34 @@ export default function IncidentWorkspace() {
                 </button>
               </div>
               <p className="mt-3 max-h-24 overflow-hidden text-sm leading-6 text-gray-700">
-                {selectedIncident.description ?? '—'}
+                {selectedIncident.description ?? '-'}
               </p>
             </div>
+
+            {selectedIncident.status === 'REJETE' ? (
+              <div className="rounded-2xl border border-danger/20 bg-danger/5 p-4 text-sm text-gray-700 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-danger">Incident rejete</p>
+                  <p className="mt-1 text-sm text-gray-600">Vous pouvez rouvrir ce ticket ou le rejeter a nouveau.</p>
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => void handleReopenIncident(selectedIncident)}
+                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
+                  >
+                    Reouvrir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleRejectIncident(selectedIncident)}
+                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm font-semibold text-danger transition hover:bg-danger/10"
+                  >
+                    Rejeter l'incident
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
               <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-400">Infos rapides</p>
@@ -629,3 +705,6 @@ export default function IncidentWorkspace() {
     </div>
   );
 }
+
+
+

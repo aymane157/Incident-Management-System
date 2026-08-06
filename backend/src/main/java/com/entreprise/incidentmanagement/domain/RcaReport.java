@@ -46,6 +46,18 @@ public class RcaReport {
 
     private LocalDateTime validatedAt;
 
+    @Builder.Default
+    private boolean sentToClient = false;
+
+    private LocalDateTime sentToClientAt;
+
+    @Builder.Default
+    private boolean rejectedByClient = false;
+
+    @Column(length = 1000)
+    private String clientRejectionReason;
+
+    private LocalDateTime clientRejectedAt;
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

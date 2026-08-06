@@ -72,8 +72,7 @@ export default function RTRcaReport() {
         const incidents = await fetchTeamIncidents(userData.teamId);
         if (!active) return;
 
-        const owned = incidents.filter((item) => item.handledBy?.id === userData.id);
-        setTeamIncidents(owned);
+        setTeamIncidents(incidents.filter((item) => item.status !== 'CLOSED' && item.status !== 'REJETE'));
 
         if (referenceId) {
           const incidentData = await fetchNewIncident(referenceId);
@@ -117,6 +116,8 @@ export default function RTRcaReport() {
       );
     });
   }, [search, teamIncidents]);
+
+  const canSubmit = Boolean(currentUser?.id && incident?.status !== 'CLOSED' && incident?.status !== 'REJETE');
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -241,8 +242,6 @@ export default function RTRcaReport() {
     );
   }
 
-  const isOwnedByMe = incident.handledBy?.id === currentUser?.id;
-
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-6">
       <button
@@ -263,7 +262,7 @@ export default function RTRcaReport() {
               </p>
             </div>
             <span className="rounded-full bg-success/10 px-3 py-1 text-xs font-semibold text-success">
-              {isOwnedByMe ? 'Assigné à vous' : 'À prendre'}
+              {incident.handledBy?.id === currentUser?.id ? 'Assigne a vous' : 'Prise automatique a l envoi'}
             </span>
           </div>
 
@@ -338,11 +337,11 @@ export default function RTRcaReport() {
 
               <button
                 type="submit"
-                disabled={submitting || !isOwnedByMe}
+                disabled={submitting || !canSubmit}
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                {submitting ? 'Enregistrement...' : 'Enregistrer le RCA'}
+                {submitting ? 'Enregistrement...' : 'Enregistrer et m assigner'}
               </button>
             </form>
           )}
@@ -381,3 +380,7 @@ export default function RTRcaReport() {
     </div>
   );
 }
+
+
+
+

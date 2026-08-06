@@ -62,6 +62,14 @@ public class RcaReportService {
         return findByIncident(incident).map(DomainDtoMapper::toDto);
     }
 
+    @Transactional(readOnly = true)
+    public List<RcaReportDto> findByClientIdDto(Long clientUserId) {
+        return rcaReportRepository.findByIncident_CreatedBy_IdAndSentToClientTrue(clientUserId)
+                .stream()
+                .map(DomainDtoMapper::toDto)
+                .toList();
+    }
+
     @Transactional
     public RcaReport save(RcaReport report) {
         return rcaReportRepository.save(report);
@@ -69,9 +77,39 @@ public class RcaReportService {
 
     @Transactional
     public RcaReportDto saveDto(RcaReportDto reportDto) {
-        if (reportDto.getCreatedAt() == null) {
-            reportDto.setCreatedAt(java.time.LocalDateTime.now());
+        if (reportDto == null) {
+            throw new IllegalArgumentException("RCA report is required");
         }
+        if (reportDto.getIncident() == null || reportDto.getIncident().getId() == null) {
+            throw new IllegalArgumentException("An incident is required for the RCA report");
+        }
+        if (reportDto.getAuthor() == null || reportDto.getAuthor().getId() == null) {
+            throw new IllegalArgumentException("An author is required for the RCA report");
+        }
+
+        Incident incident = incidentRepository.findById(reportDto.getIncident().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with id " + reportDto.getIncident().getId()));
+        User author = userRepository.findById(reportDto.getAuthor().getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + reportDto.getAuthor().getId()));
+
+        if (findByIncident(incident).isPresent()) {
+            throw new IllegalStateException("An RCA report already exists for this incident");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        incident.setHandledBy(author);
+        incident.setAssignedAt(now);
+        if (incident.getStatus() != IncidentStatus.REJETE && incident.getStatus() != IncidentStatus.CLOSED) {
+            incident.setStatus(IncidentStatus.IN_PROGRESS);
+        }
+        incidentRepository.save(incident);
+
+        reportDto.setIncident(DomainDtoMapper.toDto(incident));
+        reportDto.setAuthor(DomainDtoMapper.toDto(author));
+        if (reportDto.getCreatedAt() == null) {
+            reportDto.setCreatedAt(now);
+        }
+
         RcaReport saved = save(DomainDtoMapper.toEntity(reportDto));
         notifyIncidentManager(saved);
         return DomainDtoMapper.toDto(saved);
@@ -95,8 +133,11 @@ public class RcaReportService {
 
                 .message("Nouveau RCA recu pour l'incident " + reference)
                 .build();
-        NotificationDto notificationDto= DomainDtoMapper.toDto(notification);
-        notificationService.sendMailNotification(notificationDto,"aymanemwa@gmail.com");
+        NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
+        String recipientEmail = recipient.getEmail();
+        if (recipientEmail != null && !recipientEmail.isBlank()) {
+            notificationService.sendMailNotification(notificationDto, recipientEmail);
+        }
     }
 
     @Transactional
@@ -137,18 +178,69 @@ public class RcaReportService {
         existing.setValidatedByManager(validation);
         existing.setValidatedAt(LocalDateTime.now());
 
-        Incident incident = existing.getIncident();
-        if (incident == null) {
-            throw new ResourceNotFoundException("Incident not found for RCA report " + reportId);
+        RcaReport saved = rcaReportRepository.save(existing);
+        return DomainDtoMapper.toDto(saved);
+    }
+
+    @Transactional
+    public RcaReportDto sendToClient(Long reportId, Long managerId) {
+        RcaReport report = findById(reportId)
+                .orElseThrow(() -> new ResourceNotFoundException("RCA report not found with id " + reportId));
+        Incident incident = report.getIncident();
+        if (incident == null || incident.getIncidentManager() == null || !incident.getIncidentManager().getId().equals(managerId)) {
+            throw new IllegalArgumentException("Only the incident manager can send this RCA");
+        }
+        if (!report.isValidatedByManager()) {
+            throw new IllegalStateException("The RCA must be validated before it can be sent");
+        }
+        if (incident.getCreatedBy() == null) {
+            throw new ResourceNotFoundException("Client not found for RCA report " + reportId);
         }
 
+        LocalDateTime now = LocalDateTime.now();
+        report.setSentToClient(true);
+        report.setSentToClientAt(now);
+        report.setRejectedByClient(false);
+        report.setClientRejectionReason(null);
+        report.setClientRejectedAt(null);
+
         incident.setStatus(IncidentStatus.CLOSED);
-        incident.setValidatedAt(LocalDateTime.now());
-        incident.setClosedAt(LocalDateTime.now());
+        incident.setValidatedAt(now);
+        incident.setClosedAt(now);
         incidentRepository.save(incident);
 
-        RcaReport saved = rcaReportRepository.save(existing);
+        RcaReport saved = rcaReportRepository.save(report);
         notifyClientOfValidation(saved);
+        return DomainDtoMapper.toDto(saved);
+    }
+
+    @Transactional
+    public RcaReportDto rejectByClient(Long reportId, Long clientId, String reason) {
+        RcaReport report = findById(reportId)
+                .orElseThrow(() -> new ResourceNotFoundException("RCA report not found with id " + reportId));
+        if (!report.isSentToClient() || report.getIncident() == null || report.getIncident().getCreatedBy() == null || !report.getIncident().getCreatedBy().getId().equals(clientId)) {
+            throw new IllegalArgumentException("This RCA is not available for this client");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("A rejection reason is required");
+        }
+
+        report.setRejectedByClient(true);
+        report.setClientRejectionReason(reason.trim());
+        report.setClientRejectedAt(LocalDateTime.now());
+        report.setSentToClient(false);
+
+        RcaReport saved = rcaReportRepository.save(report);
+        User manager = saved.getIncident().getIncidentManager();
+        if (manager != null) {
+            Notification notification = Notification.builder()
+                    .recipient(manager)
+                    .incident(saved.getIncident())
+                    .type(NotificationType.MESSAGE_RECU)
+                    .message("Client rejected RCA for incident " + saved.getIncident().getReference() + ". Reason: " + reason.trim())
+                    .build();
+            notificationService.saveDto(DomainDtoMapper.toDto(notification));
+        }
         return DomainDtoMapper.toDto(saved);
     }
 
@@ -157,33 +249,30 @@ public class RcaReportService {
             return;
         }
 
-        String clientEmail = "eddamane356@gmail.com";
         User recipient = report.getIncident().getCreatedBy();
-        if (recipient == null) {
-            recipient = report.getIncident().getIncidentManager();
-        }
-        if (recipient == null) {
-            recipient = report.getValidatedBy();
-        }
         if (recipient == null) {
             return;
         }
+
+        String clientEmail = recipient.getEmail();
 
         Notification notification = Notification.builder()
                 .recipient(recipient)
                 .incident(report.getIncident())
                 .type(NotificationType.INCIDENT_CLOTURE)
-                .message("RCA a ete valide pour l'incident " + report.getIncident().getReference()
-                        + ". L'incident est maintenant ferme.")
+                .message("RCA disponible pour l'incident " + report.getIncident().getReference()
+                        + ". Il est maintenant visible sur votre page client.")
                 .build();
 
         NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
-        notificationService.sendMailNotification(notificationDto, clientEmail);
+        if (clientEmail != null && !clientEmail.isBlank()) {
+            notificationService.sendMailNotification(notificationDto, clientEmail);
+        }
     }
-
 
     @Transactional
     public void deleteById(Long id) {
         rcaReportRepository.deleteById(id);
     }
 }
+

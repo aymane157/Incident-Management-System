@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import {
-  claimIncident,
   fetchNewIncident,
   fetchUserById,
   getAttachmentUrl,
@@ -77,7 +76,6 @@ export default function RTIncidentDetail() {
   const [incident, setIncident] = useState<IncidentDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [claiming, setClaiming] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [actionMessage, setActionMessage] = useState('');
@@ -118,37 +116,16 @@ export default function RTIncidentDetail() {
     };
   }, [referenceId, user?.id]);
 
-  const canClaim = useMemo(() => {
-    if (!incident || !currentUser?.teamId) return false;
-    if (incident.status === 'CLOSED' || incident.status === 'REJETE') return false;
-    return incident.assignedTeam?.id === currentUser.teamId && incident.handledBy?.id !== currentUser.id;
-  }, [currentUser?.id, currentUser?.teamId, incident]);
-
   const canWriteReport = useMemo(() => {
-    if (!incident || !currentUser?.id) return false;
-    return incident.handledBy?.id === currentUser.id && incident.status !== 'CLOSED' && incident.status !== 'REJETE';
-  }, [currentUser?.id, incident]);
+    if (!incident || !currentUser?.teamId) return false;
+    return incident.assignedTeam?.id === currentUser.teamId && incident.status !== 'CLOSED' && incident.status !== 'REJETE';
+  }, [currentUser?.teamId, incident]);
 
   const canReject = useMemo(() => {
     if (!incident || !currentUser?.teamId) return false;
     if (incident.status === 'CLOSED' || incident.status === 'REJETE') return false;
     return incident.assignedTeam?.id === currentUser.teamId;
   }, [currentUser?.teamId, incident]);
-
-  async function handleClaim() {
-    if (!incident || !user?.id) return;
-    setClaiming(true);
-    setError('');
-
-    try {
-      const updated = await claimIncident(incident.id, user.id);
-      setIncident(updated);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de prendre en charge l’incident.');
-    } finally {
-      setClaiming(false);
-    }
-  }
 
   async function handleReject() {
     if (!incident || !user?.id) return;
@@ -307,6 +284,26 @@ export default function RTIncidentDetail() {
               {incident.description ?? 'Aucune description fournie.'}
             </p>
           </section>
+          {incident.rejectionReason ? (
+            <section className="card-white p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">D?tails de rejet</h2>
+                  <p className="mt-1 text-sm text-gray-500">Visible tant que le manager n?a pas valid? la d?cision finale.</p>
+                </div>
+                <AlertCircle className="h-5 w-5 text-danger" />
+              </div>
+              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-700">Motif de rejet</p>
+                <p className="mt-2 text-sm leading-6 text-red-900">
+                  {incident.rejectionReason}
+                </p>
+                {incident.status !== 'REJETE' ? (
+                  <p className="mt-2 text-xs font-medium text-red-700">En attente de validation par le manager.</p>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
 
           <section className="card-white p-6">
             <div className="flex items-center gap-2">
@@ -352,17 +349,6 @@ export default function RTIncidentDetail() {
             </p>
 
             <div className="mt-4 space-y-3">
-              {canClaim ? (
-                <button
-                  type="button"
-                  onClick={() => void handleClaim()}
-                  disabled={claiming}
-                  className="w-full rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {claiming ? 'Prise en charge...' : 'Me l’assigner'}
-                </button>
-              ) : null}
-
               <button
                 type="button"
                 onClick={() => navigate(`/rt/report/${incident.reference}`)}
@@ -412,15 +398,15 @@ export default function RTIncidentDetail() {
           </section>
 
           <section className="card-white p-6">
-            <h2 className="text-lg font-bold text-gray-900">Résumé</h2>
+            <h2 className="text-lg font-bold text-gray-900">R?sum?</h2>
             <div className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-gray-500">Référence</span>
+                <span className="text-gray-500">R?f?rence</span>
                 <span className="font-semibold text-gray-900">{incident.reference}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-gray-500">Application</span>
-                <span className="font-semibold text-gray-900">{incident.application?.name ?? '—'}</span>
+                <span className="font-semibold text-gray-900">{incident.application?.name ?? "?"}</span>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span className="text-gray-500">Client</span>
@@ -430,15 +416,18 @@ export default function RTIncidentDetail() {
                 <span className="text-gray-500">Technicien</span>
                 <span className="font-semibold text-gray-900">{fullName(incident.handledBy)}</span>
               </div>
-              {incident.status === 'REJETE' ? (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-700">Motif de rejet</p>
-                  <p className="mt-2 text-sm leading-6 text-red-900">
-                    {incident.rejectionReason ?? 'Aucun motif enregistré.'}
-                  </p>
-                </div>
-              ) : null}
             </div>
+            {incident.rejectionReason ? (
+              <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-700">Motif de rejet</p>
+                <p className="mt-2 text-sm leading-6 text-red-900">
+                  {incident.rejectionReason}
+                </p>
+                {incident.status !== 'REJETE' ? (
+                  <p className="mt-2 text-xs font-medium text-red-700">En attente de validation par le manager.</p>
+                ) : null}
+              </div>
+            ) : null}
           </section>
         </aside>
       </div>

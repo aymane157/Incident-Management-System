@@ -7,7 +7,6 @@ import {
   ClipboardList,
   Clock3,
   Download,
-  FileText,
   Loader2,
   Monitor,
   Paperclip,
@@ -299,6 +298,17 @@ export default function IncidentDetail() {
                 </div>
               ))}
             </div>
+            {incident.rejectionReason ? (
+              <div className="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-red-700">Motif de rejet</p>
+                <p className="mt-2 text-sm leading-6 text-red-900">
+                  {incident.rejectionReason}
+                </p>
+                {incident.status !== 'REJETE' ? (
+                  <p className="mt-2 text-xs font-medium text-red-700">En attente de validation par le manager.</p>
+                ) : null}
+              </div>
+            ) : null}
           </section>
 
           <section className="card-white p-6">

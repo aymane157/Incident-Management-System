@@ -287,9 +287,11 @@ export default function ClientTickets() {
                         <span className={`inline-flex w-fit rounded-full px-2.5 py-1 text-[10px] font-bold ${statusStyles[ticket.status]}`}>
                           {statusLabels[ticket.status]}
                         </span>
-                        {ticket.status === 'REJETE' && ticket.rejectionReason ? (
+                        {ticket.rejectionReason ? (
                           <p className="max-w-xs text-xs text-gray-500 line-clamp-2">
-                            {ticket.rejectionReason}
+                            {ticket.status === 'REJETE'
+                              ? ticket.rejectionReason
+                              : `Motif en attente de validation: ${ticket.rejectionReason}`}
                           </p>
                         ) : null}
                       </div>

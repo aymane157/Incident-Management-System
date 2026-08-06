@@ -226,6 +226,11 @@ public final class DomainDtoMapper {
                 .validatedBy(toDto(entity.getValidatedBy()))
                 .createdAt(entity.getCreatedAt())
                 .validatedAt(entity.getValidatedAt())
+                .sentToClient(entity.isSentToClient())
+                .sentToClientAt(entity.getSentToClientAt())
+                .rejectedByClient(entity.isRejectedByClient())
+                .clientRejectionReason(entity.getClientRejectionReason())
+                .clientRejectedAt(entity.getClientRejectedAt())
                 .build();
     }
 
@@ -243,6 +248,11 @@ public final class DomainDtoMapper {
                 .validatedBy(toEntity(dto.getValidatedBy()))
                 .createdAt(dto.getCreatedAt())
                 .validatedAt(dto.getValidatedAt())
+                .sentToClient(dto.isSentToClient())
+                .sentToClientAt(dto.getSentToClientAt())
+                .rejectedByClient(dto.isRejectedByClient())
+                .clientRejectionReason(dto.getClientRejectionReason())
+                .clientRejectedAt(dto.getClientRejectedAt())
                 .build();
         report.setId(dto.getId());
         return report;

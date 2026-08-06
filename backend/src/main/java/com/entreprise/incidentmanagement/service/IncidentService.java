@@ -143,7 +143,10 @@ public class IncidentService {
             updated.setSlaDeadline(calculateSla(incidentDto.getIncidentLevel()));
             NotificationDto notificationDto = buildClientIncidentNotification(updated,updated.getCreatedBy() );
             NotificationDto savedNotification = notificationService.saveDto(notificationDto);
-            notificationService.sendMailNotification(savedNotification, "aymanemwa2@gmail.com");
+            String teamMail="aymanemwa2@gmail.com";
+            if (teamMail != null && !teamMail.isBlank()) {
+                notificationService.sendMailNotification(savedNotification, teamMail);
+            }
         } else {
             updated.setAssignedTeam(existing.getAssignedTeam());
         }
@@ -222,7 +225,10 @@ public class IncidentService {
             savedIncident.setAttachments(storedAttachments);
             NotificationDto notificationDto = buildClientIncidentNotification(savedIncident, createdBy);
             NotificationDto savedNotification = notificationService.saveDto(notificationDto);
-            notificationService.sendMailNotification(savedNotification, "aymanemwa@gmail.com");
+            String email = incidentManager.getEmail();
+            if (email != null && !email.isBlank()) {
+                notificationService.sendMailNotification(savedNotification, email);
+            }
             return DomainDtoMapper.toDto(savedIncident);
         } catch (IOException | RuntimeException ex) {
             fileStorageService.cleanupStoredFiles(storedAttachments);
@@ -253,14 +259,65 @@ public class IncidentService {
         }
 
         incident.setHandledBy(teamMember);
-        incident.setStatus(IncidentStatus.REJETE);
+        incident.setStatus(IncidentStatus.IN_PROGRESS);
         incident.setAssignedAt(LocalDateTime.now());
-        incident.setClosedAt(LocalDateTime.now());
+        incident.setClosedAt(null);
         incident.setRejectionReason(reason);
 
         Incident savedIncident = incidentRepository.save(incident);
         notifyIncidentManagerOfRejection(savedIncident, teamMember, reason);
         return DomainDtoMapper.toDto(savedIncident);
+    }
+
+    @Transactional
+    public IncidentDto rejectIncidentByManager(String reference, String reason, Long managerId) {
+        User manager = userRepository.findById(managerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + managerId));
+        Incident incident = incidentRepository.findByReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with reference " + reference));
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Reason is required");
+        }
+        if (incident.getIncidentManager() == null || incident.getIncidentManager().getId() == null) {
+            throw new IllegalArgumentException("Incident manager is not assigned to this incident");
+        }
+        if (!incident.getIncidentManager().getId().equals(manager.getId())) {
+            throw new IllegalArgumentException("Only the assigned incident manager can reject this ticket");
+        }
+
+        incident.setHandledBy(manager);
+        incident.setStatus(IncidentStatus.IN_PROGRESS);
+        incident.setAssignedAt(LocalDateTime.now());
+        incident.setClosedAt(null);
+        incident.setRejectionReason(reason.trim());
+
+        Incident savedIncident = incidentRepository.save(incident);
+        notifyClientOfManagerRejection(savedIncident, manager, reason.trim());
+        return DomainDtoMapper.toDto(savedIncident);
+    }
+
+    @Transactional
+    public IncidentDto reopenRejectedIncident(String reference, Long managerId) {
+        User manager = userRepository.findById(managerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + managerId));
+        Incident incident = incidentRepository.findByReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with reference " + reference));
+
+        if (incident.getIncidentManager() == null || incident.getIncidentManager().getId() == null) {
+            throw new IllegalArgumentException("Incident manager is not assigned to this incident");
+        }
+        if (!incident.getIncidentManager().getId().equals(manager.getId())) {
+            throw new IllegalArgumentException("Only the assigned incident manager can reopen this ticket");
+        }
+        if (incident.getStatus() != IncidentStatus.REJETE) {
+            throw new IllegalStateException("Only a rejected incident can be reopened");
+        }
+
+        incident.setStatus(IncidentStatus.VALIDATED);
+        incident.setRejectionReason(null);
+        incident.setClosedAt(null);
+
+        return DomainDtoMapper.toDto(incidentRepository.save(incident));
     }
 
     /*public IncidentDto closeIncident(){
@@ -273,8 +330,7 @@ public class IncidentService {
             return;
         }
 
-        String managerEmail = "aymanemwa@gmail.com";
-        String clientEmail="eddamane356@gmail.com";
+        String managerEmail = incidentManager.getEmail();
         String reference = incident.getReference() == null ? "" : incident.getReference();
         String actorName = teamMember.getFirstName() == null && teamMember.getLastName() == null
                 ? "a team member"
@@ -292,9 +348,40 @@ public class IncidentService {
         NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
         if (managerEmail != null && !managerEmail.isBlank()) {
             notificationService.sendMailNotification(notificationDto, managerEmail);
+        }
+    }
+
+    private void notifyClientOfManagerRejection(Incident incident, User manager, String reason) {
+        User client = incident.getCreatedBy();
+        if (client == null) {
+            return;
+        }
+
+        String clientEmail = client.getEmail();
+        String reference = incident.getReference() == null ? "" : incident.getReference();
+        String managerName = manager.getFirstName() == null && manager.getLastName() == null
+                ? "the incident manager"
+                : (manager.getFirstName() == null ? "" : manager.getFirstName() + " ")
+                + (manager.getLastName() == null ? "" : manager.getLastName());
+        String message = "Incident " + reference + " rejected by " + managerName.trim() + ". Reason: " + reason;
+
+        Notification notification = Notification.builder()
+                .recipient(client)
+                .incident(incident)
+                .type(NotificationType.INCIDENT_REJETE)
+                .message(message)
+                .build();
+
+        NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
+        if (clientEmail != null && !clientEmail.isBlank()) {
             notificationService.sendMailNotification(notificationDto, clientEmail);
         }
     }
+    /*public IncidentDto closeIncident(){
+
+    }*/
+
+
 
 
     private NotificationDto buildClientIncidentNotification(Incident savedIncident, User createdBy) {
@@ -338,3 +425,4 @@ public class IncidentService {
     }
 
 }
+

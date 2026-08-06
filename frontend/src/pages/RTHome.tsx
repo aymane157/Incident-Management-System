@@ -9,11 +9,9 @@ import {
   Filter,
   Loader2,
   Search,
-  UserCheck,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import {
-  claimIncident,
   fetchTeamById,
   fetchTeamIncidents,
   fetchUserById,
@@ -90,7 +88,6 @@ export default function RTHome() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | IncidentDto['status']>('all');
-  const [claimingId, setClaimingId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -158,29 +155,12 @@ export default function RTHome() {
   const newCount = incidents.filter((incident) => incident.status === 'NEW').length;
   const inProgressCount = incidents.filter((incident) => incident.status === 'IN_PROGRESS').length;
   const riskCount = incidents.filter((incident) => incident.incidentLevel === 'CRITICAL' || incident.incidentLevel === 'HIGH').length;
-
-  async function handleClaim(incident: IncidentDto) {
-    if (!user?.id) return;
-    setClaimingId(incident.id);
-    setError('');
-
-    try {
-      const updated = await claimIncident(incident.id, user.id);
-      setIncidents((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      navigate(`/rt/incident/${updated.reference}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de prendre en charge cet incident.');
-    } finally {
-      setClaimingId(null);
-    }
-  }
-
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center bg-background">
         <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          <span className="text-sm font-medium text-gray-700">Chargement de votre file d’incidents...</span>
+          <span className="text-sm font-medium text-gray-700">Chargement de votre file d?incidents...</span>
         </div>
       </div>
     );
@@ -190,7 +170,7 @@ export default function RTHome() {
     return (
       <div className="h-full bg-background p-8">
         <div className="card-white mx-auto max-w-2xl p-8">
-          <h1 className="text-2xl font-bold text-gray-900">Accès RT</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Acc?s RT</h1>
           <p className="mt-2 text-sm text-gray-600">{error}</p>
         </div>
       </div>
@@ -294,9 +274,6 @@ export default function RTHome() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.map((incident) => {
-                const claimedByMe = user?.id && incident.handledBy?.id === user.id;
-                const canClaim = team?.id && incident.assignedTeam?.id === team.id && !claimedByMe && incident.status !== 'CLOSED';
-
                 return (
                   <tr
                     key={incident.id}
@@ -304,7 +281,7 @@ export default function RTHome() {
                     onClick={() => navigate(`/rt/incident/${incident.reference}`)}
                   >
                     <td className="py-4 px-5 font-medium text-gray-900">{incident.reference}</td>
-                    <td className="py-4 px-5 text-gray-600">{incident.application?.name ?? '—'}</td>
+                    <td className="py-4 px-5 text-gray-600">{incident.application?.name ?? '?'}</td>
                     <td className="py-4 px-5 text-gray-600">{formatName(incident.createdBy)}</td>
                     <td className="py-4 px-5">
                       <span className={`text-[10px] px-2 py-1 rounded font-bold ${statusClass(incident.status)}`}>
@@ -313,39 +290,23 @@ export default function RTHome() {
                     </td>
                     <td className="py-4 px-5">
                       <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${priorityClass(incident.incidentLevel)}`}>
-                        {incident.incidentLevel ?? '—'}
+                        {incident.incidentLevel ?? '?'}
                       </span>
                     </td>
                     <td className="py-4 px-5 text-gray-500 text-xs">
-                      {claimedByMe ? 'Vous' : formatName(incident.handledBy)}
+                      {formatName(incident.handledBy)}
                     </td>
                     <td className="py-4 px-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {canClaim ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void handleClaim(incident);
-                            }}
-                            disabled={claimingId === incident.id}
-                            className="inline-flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"
-                          >
-                            {claimingId === incident.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserCheck className="h-3.5 w-3.5" />}
-                            {claimingId === incident.id ? 'Prise en charge...' : 'Me l’assigner'}
-                          </button>
-                        ) : null}
-                        <button
-                          className="flex items-center space-x-1 text-primary text-xs font-semibold hover:underline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/rt/incident/${incident.reference}`);
-                          }}
-                        >
-                          <span>Ouvrir</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </button>
-                      </div>
+                      <button
+                        className="flex items-center space-x-1 text-primary text-xs font-semibold hover:underline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/rt/incident/${incident.reference}`);
+                        }}
+                      >
+                        <span>Ouvrir</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
                     </td>
                   </tr>
                 );
@@ -368,3 +329,8 @@ export default function RTHome() {
     </div>
   );
 }
+
+
+
+
+
