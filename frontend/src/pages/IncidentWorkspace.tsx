@@ -702,24 +702,8 @@ export default function IncidentWorkspace() {
               <div className="rounded-2xl border border-danger/20 bg-danger/5 p-4 text-sm text-gray-700 space-y-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-danger">Incident rejete</p>
-                  <p className="mt-1 text-sm text-gray-600">Vous pouvez rouvrir ce ticket ou le rejeter a nouveau.</p>
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={() => void handleReopenIncident(selectedIncident)}
-                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
-                  >
-                    Reouvrir
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleProposeRejection(selectedIncident)}
-                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm font-semibold text-danger transition hover:bg-danger/10"
-                  >
-                    Proposer un rejet
-                  </button>
-                </div>
+                     </div>
+               
               </div>
             ) : null}
 

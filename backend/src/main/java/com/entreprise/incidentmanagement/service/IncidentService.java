@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
 
+import static com.entreprise.incidentmanagement.domain.IncidentStatus.REJETE;
 import static org.springframework.data.jpa.domain.AbstractAuditable_.createdBy;
 
 @Service
@@ -265,7 +266,7 @@ public class IncidentService {
         incident.setRejectionReason(reason);
 
         Incident savedIncident = incidentRepository.save(incident);
-        notifyIncidentManagerOfRejection(savedIncident, teamMember, reason);
+        notifyIncidentManagerOfRejectionProposal(savedIncident, teamMember, reason);
         return DomainDtoMapper.toDto(savedIncident);
     }
 
@@ -290,7 +291,7 @@ public class IncidentService {
         incident.setAssignedAt(LocalDateTime.now());
         incident.setClosedAt(null);
         incident.setRejectionReason(reason.trim());
-
+        incident.setStatus(REJETE);
         Incident savedIncident = incidentRepository.save(incident);
         notifyClientOfManagerRejection(savedIncident, manager, reason.trim());
         return DomainDtoMapper.toDto(savedIncident);
@@ -312,13 +313,14 @@ public class IncidentService {
             throw new IllegalStateException("This incident does not have a rejection to review");
         }
 
-        incident.setStatus(validated ? IncidentStatus.REJETE : IncidentStatus.IN_PROGRESS);
+        incident.setStatus(validated ? REJETE : IncidentStatus.IN_PROGRESS);
         if (!validated) {
             incident.setRejectionReason(null);
         }
         incident.setValidatedAt(LocalDateTime.now());
-
-        return DomainDtoMapper.toDto(incidentRepository.save(incident));
+        Incident newIncident=incidentRepository.save(incident);
+        notifyClientOfManagerRejection(newIncident,manager,incident.getRejectionReason());
+        return DomainDtoMapper.toDto(newIncident);
     }
     @Transactional
     public IncidentDto reopenRejectedIncident(String reference, Long managerId) {
@@ -333,7 +335,7 @@ public class IncidentService {
         if (!incident.getIncidentManager().getId().equals(manager.getId())) {
             throw new IllegalArgumentException("Only the assigned incident manager can reopen this ticket");
         }
-        if (incident.getStatus() != IncidentStatus.REJETE) {
+        if (incident.getStatus() != REJETE) {
             throw new IllegalStateException("Only a rejected incident can be reopened");
         }
 
@@ -361,6 +363,32 @@ public class IncidentService {
                 : (teamMember.getFirstName() == null ? "" : teamMember.getFirstName() + " ")
                 + (teamMember.getLastName() == null ? "" : teamMember.getLastName());
         String message = "Incident " + reference + " rejected by " + actorName.trim() + ". Reason: " + reason;
+
+        Notification notification = Notification.builder()
+                .recipient(incidentManager)
+                .incident(incident)
+                .type(NotificationType.INCIDENT_REJETE)
+                .message(message)
+                .build();
+
+        NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
+        if (managerEmail != null && !managerEmail.isBlank()) {
+            notificationService.sendMailNotification(notificationDto, managerEmail);
+        }
+    }
+    private void notifyIncidentManagerOfRejectionProposal(Incident incident, User teamMember, String reason) {
+        User incidentManager = incident.getIncidentManager();
+        if (incidentManager == null) {
+            return;
+        }
+
+        String managerEmail = incidentManager.getEmail();
+        String reference = incident.getReference() == null ? "" : incident.getReference();
+        String actorName = teamMember.getFirstName() == null && teamMember.getLastName() == null
+                ? "a team member"
+                : (teamMember.getFirstName() == null ? "" : teamMember.getFirstName() + " ")
+                + (teamMember.getLastName() == null ? "" : teamMember.getLastName());
+        String message = "Proposale Of Rejection:   Incident " + reference + " rejected by " + actorName.trim() + ". Reason: " + reason;
 
         Notification notification = Notification.builder()
                 .recipient(incidentManager)
