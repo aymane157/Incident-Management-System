@@ -117,7 +117,7 @@ export default function RTRcaReport() {
     });
   }, [search, teamIncidents]);
 
-  const canSubmit = Boolean(currentUser?.id && incident?.status !== 'CLOSED' && incident?.status !== 'REJETE');
+  const canSubmit = Boolean(currentUser?.id && incident?.status !== 'CLOSED' && incident?.status !== 'REJETE' && !existingReport);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -127,16 +127,15 @@ export default function RTRcaReport() {
     setSuccess('');
 
     try {
-      await createRcaReport({
-        incident: incident,
-        author: currentUser,
+      const created = await createRcaReport({
+        incidentId: incident.id,
+        authorId: currentUser.id,
         rootCause: form.rootCause,
         solution: form.solution,
         preventiveMeasures: form.preventiveMeasures,
-        validatedByManager: false,
-        createdAt: new Date().toISOString(),
       });
-      setSuccess('Rapport RCA enregistrÃ©.');
+      setExistingReport(created);
+      setSuccess('Rapport RCA enregistré.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible dâ€™enregistrer le rapport.');
     } finally {
@@ -341,7 +340,7 @@ export default function RTRcaReport() {
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                {submitting ? 'Enregistrement...' : 'Enregistrer et m assigner'}
+                {existingReport ? 'Rapport déjà enregistré' : submitting ? 'Enregistrement...' : 'Enregistrer et m assigner'}
               </button>
             </form>
           )}
@@ -380,6 +379,9 @@ export default function RTRcaReport() {
     </div>
   );
 }
+
+
+
 
 
 

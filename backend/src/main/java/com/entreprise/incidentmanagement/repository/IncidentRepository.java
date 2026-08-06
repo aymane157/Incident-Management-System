@@ -13,4 +13,6 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     List<Incident> findByAssignedTeam_Id(Long teamId);
     long countByReferenceStartingWith(String prefix);
     Optional<Incident> findByReference(String reference);
+
+    Incident getIncidentByReference(String reference);
 }

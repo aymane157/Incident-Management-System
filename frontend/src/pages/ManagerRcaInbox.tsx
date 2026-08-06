@@ -505,9 +505,7 @@ export default function ManagerRcaInbox() {
                 {selectedReport?.validatedByManager ? 'RCA deja valide' : validating ? 'Validation...' : 'Valider le RCA'}
               </button>
 
-              <button type="button" onClick={handleSendToClient} disabled={!selectedReport?.validatedByManager || sending} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
-                {sending ? 'Envoi...' : selectedReport?.sentToClient ? 'Renvoyer au client' : 'Envoyer au client'}
-              </button>
+           
 
               <div className="grid grid-cols-2 gap-2">
                 <button

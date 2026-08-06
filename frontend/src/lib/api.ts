@@ -80,6 +80,19 @@ export type RejectIncidentByManagerRequest = {
   managerId: number;
 };
 
+export type ManagerIncidentRejectionReviewRequest = {
+  managerId: number;
+  validated: boolean;
+};
+
+export type CreateRcaReportRequest = {
+  incidentId: number;
+  authorId: number;
+  rootCause: string;
+  solution: string;
+  preventiveMeasures: string;
+};
+
 export type IncidentDto = {
   id: number;
   reference: string;
@@ -293,6 +306,24 @@ export async function rejectIncidentByManager(
   return response.json();
 }
 
+export async function reviewIncidentRejection(
+  reference: string,
+  request: ManagerIncidentRejectionReviewRequest,
+): Promise<IncidentDto> {
+  const response = await fetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/reviewIncidentRejection`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+}
 export async function reopenRejectedIncident(reference: string, managerId: number): Promise<IncidentDto> {
   const response = await fetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/reopenRejectedIncident/${managerId}`, {
     method: 'POST',
@@ -346,7 +377,7 @@ export async function fetchRcaReports(): Promise<RcaReportDto[]> {
   return response.json();
 }
 
-export async function createRcaReport(report: Record<string, unknown>): Promise<RcaReportDto> {
+export async function createRcaReport(report: CreateRcaReportRequest): Promise<RcaReportDto> {
   const response = await fetch(`${API_BASE_URL}/rca-reports`, {
     method: 'POST',
     headers: {
@@ -428,4 +459,9 @@ export async function fetchNotificationsByRecipient(userId: number): Promise<Not
 
   return response.json();
 }
+
+
+
+
+
 

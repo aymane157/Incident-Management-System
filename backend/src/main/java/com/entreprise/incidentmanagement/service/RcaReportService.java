@@ -6,6 +6,7 @@ import com.entreprise.incidentmanagement.domain.Notification;
 import com.entreprise.incidentmanagement.domain.NotificationType;
 import com.entreprise.incidentmanagement.domain.RcaReport;
 import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.CreateRcaReportRequest;
 import com.entreprise.incidentmanagement.dto.NotificationDto;
 import com.entreprise.incidentmanagement.dto.RcaReportDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
@@ -21,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import static com.entreprise.incidentmanagement.domain.IncidentStatus.RESOLVED;
 
 @Service
 @RequiredArgsConstructor
@@ -75,6 +78,55 @@ public class RcaReportService {
         return rcaReportRepository.save(report);
     }
 
+    @Transactional
+    public RcaReportDto createFromRequest(CreateRcaReportRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("RCA report is required");
+        }
+        if (request.incidentId() == null) {
+            throw new IllegalArgumentException("An incident is required for the RCA report");
+        }
+        if (request.authorId() == null) {
+            throw new IllegalArgumentException("An author is required for the RCA report");
+        }
+        if (request.rootCause() == null || request.rootCause().isBlank()) {
+            throw new IllegalArgumentException("Root cause is required");
+        }
+        if (request.solution() == null || request.solution().isBlank()) {
+            throw new IllegalArgumentException("Solution is required");
+        }
+
+        Incident incident = incidentRepository.findById(request.incidentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with id " + request.incidentId()));
+        User author = userRepository.findById(request.authorId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + request.authorId()));
+
+        if (findByIncident(incident).isPresent()) {
+            throw new IllegalStateException("An RCA report already exists for this incident");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        incident.setHandledBy(author);
+        incident.setAssignedAt(now);
+        if (incident.getStatus() != IncidentStatus.REJETE && incident.getStatus() != IncidentStatus.CLOSED) {
+            incident.setStatus(IncidentStatus.IN_PROGRESS);
+        }
+        incidentRepository.save(incident);
+
+        RcaReport report = RcaReport.builder()
+                .incident(incident)
+                .author(author)
+                .rootCause(request.rootCause().trim())
+                .solution(request.solution().trim())
+                .preventiveMeasures(request.preventiveMeasures() == null ? null : request.preventiveMeasures().trim())
+                .validatedByManager(false)
+                .createdAt(now)
+                .build();
+
+        RcaReport saved = save(report);
+        notifyIncidentManager(saved);
+        return DomainDtoMapper.toDto(saved);
+    }
     @Transactional
     public RcaReportDto saveDto(RcaReportDto reportDto) {
         if (reportDto == null) {
@@ -151,15 +203,19 @@ public class RcaReportService {
         updated.setCreatedAt(existing.getCreatedAt());
         updated.setValidatedAt(existing.getValidatedAt());
         updated.setValidatedByManager(false);
-        updated.setValidatedBy(null);
+        updated.setValidatedBy(existing.getValidatedBy());
 
-        RcaReport saved = rcaReportRepository.save(updated);
-        if (reportDto.isValidatedByManager() && reportDto.getValidatedBy() != null && reportDto.getValidatedBy().getId() != null) {
+       System.out.println("!reveil" +reportDto);
+        if (reportDto.isValidatedByManager() ) {
+            System.out.println("working?"+reportDto);
+
+            RcaReport saved = rcaReportRepository.save(updated);
+
             return updateStatus(saved.getId(), reportDto.getValidatedBy().getId(), true);
         }
+        RcaReport saved = rcaReportRepository.save(updated);
         return DomainDtoMapper.toDto(saved);
     }
-
     @Transactional
     public RcaReportDto updateStatus(Long reportId, Long incidentManagerId, boolean validation) {
         RcaReport existing = findById(reportId)
@@ -169,7 +225,7 @@ public class RcaReportService {
         }
         User incidentManager= userRepository.findById(incidentManagerId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + incidentManagerId));
-
+        Incident incident=incidentRepository.getIncidentByReference((existing.getIncident().getReference()));
         if (existing.isValidatedByManager()) {
             return DomainDtoMapper.toDto(existing);
         }
@@ -177,8 +233,13 @@ public class RcaReportService {
         existing.setValidatedBy(incidentManager);
         existing.setValidatedByManager(validation);
         existing.setValidatedAt(LocalDateTime.now());
+        existing.setSentToClient(true);
 
         RcaReport saved = rcaReportRepository.save(existing);
+        notifyClientOfValidation(saved);
+        incident.setStatus(RESOLVED);
+        incidentRepository.save(incident);
+
         return DomainDtoMapper.toDto(saved);
     }
 
@@ -275,4 +336,6 @@ public class RcaReportService {
         rcaReportRepository.deleteById(id);
     }
 }
+
+
 

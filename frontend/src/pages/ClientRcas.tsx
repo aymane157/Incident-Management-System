@@ -89,22 +89,7 @@ export default function ClientRcas() {
               </section>
             </div>
 
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <input
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                placeholder="Motif du rejet"
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              />
-              <button
-                onClick={() => void reject(report.id)}
-                disabled={rejecting === report.id}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-danger px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                <XCircle className="h-4 w-4" />
-                {rejecting === report.id ? 'Envoi...' : 'Rejeter le RCA'}
-              </button>
-            </div>
+          
           </article>
         ))}
 

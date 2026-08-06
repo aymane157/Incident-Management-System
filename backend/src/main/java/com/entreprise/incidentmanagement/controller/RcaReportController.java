@@ -1,5 +1,7 @@
 package com.entreprise.incidentmanagement.controller;
 
+import com.entreprise.incidentmanagement.dto.ClientRcaRejectionRequest;
+import com.entreprise.incidentmanagement.dto.CreateRcaReportRequest;
 import com.entreprise.incidentmanagement.dto.RcaReportDto;
 import com.entreprise.incidentmanagement.dto.RcaValidationRequest;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
@@ -42,8 +44,8 @@ public class RcaReportController {
     }
 
     @PostMapping
-    public ResponseEntity<RcaReportDto> create(@RequestBody RcaReportDto reportDto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(rcaReportService.saveDto(reportDto));
+    public ResponseEntity<RcaReportDto> create(@RequestBody CreateRcaReportRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(rcaReportService.createFromRequest(request));
     }
 
     @PutMapping("/{id}")
@@ -70,6 +72,7 @@ public class RcaReportController {
     public RcaReportDto rejectByClient(@PathVariable Long id, @RequestBody ClientRcaRejectionRequest request) {
         return rcaReportService.rejectByClient(id, request.clientId(), request.reason());
     }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (rcaReportService.findById(id).isEmpty()) {
@@ -84,3 +87,4 @@ public class RcaReportController {
         return ResponseEntity.ok(rcaReportService.findAllDto());
     }
 }
+

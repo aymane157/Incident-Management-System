@@ -26,6 +26,7 @@ import {
   TeamDto,
   rejectIncidentByManager,
   reopenRejectedIncident,
+  reviewIncidentRejection,
   updateIncident,
 } from '../lib/api';
 
@@ -356,7 +357,7 @@ export default function IncidentWorkspace() {
     }
   };
 
-  const handleRejectIncident = async (incident: IncidentDto) => {
+  const handleProposeRejection = async (incident: IncidentDto) => {
     const managerId = user?.id ?? STATIC_INCIDENT_MANAGER_ID;
     const reason = window.prompt(`Motif du rejet pour ${incident.reference}`);
     if (!reason || !reason.trim()) {
@@ -370,13 +371,33 @@ export default function IncidentWorkspace() {
       });
       setIncidents(prev => prev.map(item => (item.id === saved.id ? saved : item)));
       setSelectedId(saved.id);
-      setSuccessMessage(`Incident ${saved.reference} rejeté.`);
+      setSuccessMessage(`Rejet propose pour l'incident ${saved.reference}.`);
       setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to reject incident');
     }
   };
 
+  const handleReviewRejection = async (incident: IncidentDto, validated: boolean) => {
+    const managerId = user?.id ?? STATIC_INCIDENT_MANAGER_ID;
+
+    try {
+      const saved = await reviewIncidentRejection(incident.reference, {
+        managerId,
+        validated,
+      });
+      setIncidents(prev => prev.map(item => (item.id === saved.id ? saved : item)));
+      setSelectedId(saved.id);
+      setSuccessMessage(
+        validated
+          ? `Rejet propose pour l'incident ${saved.reference} valide.`
+          : `Rejet propose pour l'incident ${saved.reference} refuse. Incident renvoye en cours.`
+      );
+      setTimeout(() => setSuccessMessage(null), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to review incident rejection');
+    }
+  };
   const handleReopenIncident = async (incident: IncidentDto) => {
     const managerId = user?.id ?? STATIC_INCIDENT_MANAGER_ID;
 
@@ -569,7 +590,7 @@ export default function IncidentWorkspace() {
                             Modifier
                           </button>
                           <button
-                            onClick={() => void handleRejectIncident(incident)}
+                            onClick={() => void handleProposeRejection(incident)}
                             className="ml-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger/5"
                           >
                             Rejeter
@@ -618,7 +639,7 @@ export default function IncidentWorkspace() {
                   Modifier
                 </button>
                 <button
-                  onClick={() => void handleRejectIncident(selectedIncident)}
+                  onClick={() => void handleProposeRejection(selectedIncident)}
                   className="inline-flex items-center gap-1 rounded-full border border-danger/30 bg-danger/5 px-3 py-1.5 text-xs font-semibold text-danger transition-colors hover:bg-danger/10"
                 >
                   Rejeter
@@ -648,6 +669,35 @@ export default function IncidentWorkspace() {
               </p>
             </div>
 
+            {selectedIncident.rejectionReason && selectedIncident.status === 'IN_PROGRESS' ? (
+              <div className="rounded-2xl border border-warning/20 bg-warning/5 p-4 text-sm text-gray-700 space-y-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-warning">Proposition de rejet en attente de validation</p>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Un membre de l'equipe a propose un rejet. Vous devez confirmer ou refuser cette proposition.
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/80 p-3 text-xs text-gray-600">
+                  <span className="font-semibold text-gray-800">Motif de la proposition:</span> {selectedIncident.rejectionReason}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => void handleReviewRejection(selectedIncident, true)}
+                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm font-semibold text-danger transition hover:bg-danger/10"
+                  >
+                    Valider la proposition
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleReviewRejection(selectedIncident, false)}
+                    className="inline-flex flex-1 items-center justify-center rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
+                  >
+                    Refuser la proposition
+                  </button>
+                </div>
+              </div>
+            ) : null}
             {selectedIncident.status === 'REJETE' ? (
               <div className="rounded-2xl border border-danger/20 bg-danger/5 p-4 text-sm text-gray-700 space-y-3">
                 <div>
@@ -664,10 +714,10 @@ export default function IncidentWorkspace() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void handleRejectIncident(selectedIncident)}
+                    onClick={() => void handleProposeRejection(selectedIncident)}
                     className="inline-flex flex-1 items-center justify-center rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-sm font-semibold text-danger transition hover:bg-danger/10"
                   >
-                    Rejeter l'incident
+                    Proposer un rejet
                   </button>
                 </div>
               </div>
@@ -705,6 +755,13 @@ export default function IncidentWorkspace() {
     </div>
   );
 }
+
+
+
+
+
+
+
 
 
 

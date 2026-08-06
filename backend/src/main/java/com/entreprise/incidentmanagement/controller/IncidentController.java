@@ -2,6 +2,7 @@ package com.entreprise.incidentmanagement.controller;
 
 import com.entreprise.incidentmanagement.domain.IncidentStatus;
 import com.entreprise.incidentmanagement.dto.ClientRequest;
+import com.entreprise.incidentmanagement.dto.ManagerIncidentRejectionReviewRequest;
 import com.entreprise.incidentmanagement.dto.IncidentDto;
 import com.entreprise.incidentmanagement.dto.RejectIncidentByManagerRequest;
 import com.entreprise.incidentmanagement.dto.RejectIncidentRequest;
@@ -70,6 +71,10 @@ public class IncidentController {
         return incidentService.rejectIncidentByManager(reference, request.reason(), request.managerId());
     }
 
+    @PostMapping("/{reference}/reviewIncidentRejection")
+    public IncidentDto reviewIncidentRejection(@PathVariable String reference, @RequestBody ManagerIncidentRejectionReviewRequest request) {
+        return incidentService.reviewIncidentRejection(reference, request.managerId(), request.validated());
+    }
     @PostMapping("/{reference}/reopenRejectedIncident/{managerId}")
     public IncidentDto reopenRejectedIncident(@PathVariable String reference, @PathVariable Long managerId) {
         return incidentService.reopenRejectedIncident(reference, managerId);
@@ -106,4 +111,7 @@ public class IncidentController {
         return ResponseEntity.ok(incidient);
     }
 }
+
+
+
 

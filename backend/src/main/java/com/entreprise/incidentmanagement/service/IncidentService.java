@@ -295,7 +295,31 @@ public class IncidentService {
         notifyClientOfManagerRejection(savedIncident, manager, reason.trim());
         return DomainDtoMapper.toDto(savedIncident);
     }
+    @Transactional
+    public IncidentDto reviewIncidentRejection(String reference, Long managerId, boolean validated) {
+        User manager = userRepository.findById(managerId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + managerId));
+        Incident incident = incidentRepository.findByReference(reference)
+                .orElseThrow(() -> new ResourceNotFoundException("Incident not found with reference " + reference));
 
+        if (incident.getIncidentManager() == null || incident.getIncidentManager().getId() == null) {
+            throw new IllegalArgumentException("Incident manager is not assigned to this incident");
+        }
+        if (!incident.getIncidentManager().getId().equals(manager.getId())) {
+            throw new IllegalArgumentException("Only the assigned incident manager can review this rejection");
+        }
+        if (incident.getRejectionReason() == null || incident.getRejectionReason().isBlank()) {
+            throw new IllegalStateException("This incident does not have a rejection to review");
+        }
+
+        incident.setStatus(validated ? IncidentStatus.REJETE : IncidentStatus.IN_PROGRESS);
+        if (!validated) {
+            incident.setRejectionReason(null);
+        }
+        incident.setValidatedAt(LocalDateTime.now());
+
+        return DomainDtoMapper.toDto(incidentRepository.save(incident));
+    }
     @Transactional
     public IncidentDto reopenRejectedIncident(String reference, Long managerId) {
         User manager = userRepository.findById(managerId)
@@ -425,4 +449,12 @@ public class IncidentService {
     }
 
 }
+
+
+
+
+
+
+
+
 
