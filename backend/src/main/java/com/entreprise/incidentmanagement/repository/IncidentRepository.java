@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface IncidentRepository extends JpaRepository<Incident, Long> {
     List<Incident> findByStatus(IncidentStatus status);
+
     List<Incident> findByIncidentManager_Id(Long incidentManagerId);
     List<Incident> findByAssignedTeam_Id(Long teamId);
     long countByReferenceStartingWith(String prefix);

@@ -14,6 +14,7 @@ import RTIncidentDetail from './pages/RTIncidentDetail';
 import IncidentDetail from './pages/IncidentDetail';
 import RTRcaReport from './pages/RTRcaReport';
 import ManagerRcaInbox from './pages/ManagerRcaInbox';
+import SlaClock from './pages/SlaClock';
 import Sidebar from './components/Sidebar';
 
 function homeRoute(role: UserRole): string {
@@ -132,6 +133,14 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/manager/sla-clock"
+        element={
+          <ProtectedRoute allowedRoles={['manager']}>
+            <AppLayout><SlaClock /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/admin"
@@ -183,6 +192,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/rt/sla-clock"
+        element={
+          <ProtectedRoute allowedRoles={['rt']}>
+            <AppLayout><SlaClock /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/rt/incident/:id"
         element={
           <ProtectedRoute allowedRoles={['rt']}>
@@ -207,6 +224,7 @@ function AppRoutes() {
         }
       />
 
+      <Route path="/sla-clock" element={<AppLayout><SlaClock /></AppLayout>} />
       <Route path="/incidents/:referenceId" element={<AppLayout><IncidentDetail /></AppLayout>} />
 
       <Route
