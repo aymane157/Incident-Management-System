@@ -21,8 +21,8 @@ import {
 } from '../lib/api';
 
 function fullName(user?: UserDto | null) {
-  if (!user) return 'Non assigné';
-  return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Non assigné';
+  if (!user) return 'Non assignÃ©';
+  return [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Non assignÃ©';
 }
 
 export default function RTRcaReport() {
@@ -49,7 +49,7 @@ export default function RTRcaReport() {
 
     async function loadData() {
       if (!user?.id) {
-        setError('Utilisateur non connecté.');
+        setError('Utilisateur non connectÃ©.');
         setLoading(false);
         return;
       }
@@ -64,7 +64,7 @@ export default function RTRcaReport() {
         setCurrentUser(userData);
 
         if (!userData.teamId) {
-          setError('Ce compte n’est rattaché à aucune équipe.');
+          setError('Ce compte nâ€™est rattachÃ© Ã  aucune Ã©quipe.');
           setLoading(false);
           return;
         }
@@ -135,9 +135,9 @@ export default function RTRcaReport() {
         preventiveMeasures: form.preventiveMeasures,
       });
       setExistingReport(created);
-      setSuccess('Rapport RCA enregistr�.');
+      setSuccess('Rapport RCA enregistré.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible d’enregistrer le rapport.');
+      setError(err instanceof Error ? err.message : 'Impossible dâ€™enregistrer le rapport.');
     } finally {
       setSubmitting(false);
     }
@@ -160,7 +160,7 @@ export default function RTRcaReport() {
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">RCA</h1>
-            <p className="mt-1 text-sm text-gray-500">Choisissez un incident déjà pris en charge pour rédiger son rapport.</p>
+            <p className="mt-1 text-sm text-gray-500">Choisissez un incident dÃ©jÃ  pris en charge pour rÃ©diger son rapport.</p>
           </div>
         </div>
 
@@ -194,7 +194,7 @@ export default function RTRcaReport() {
                   <div>
                     <p className="text-sm font-semibold text-gray-900">{item.reference}</p>
                     <p className="mt-1 text-xs text-gray-500">
-                      {item.application?.name ?? 'Application'} · {fullName(item.createdBy)}
+                      {item.application?.name ?? 'Application'} Â· {fullName(item.createdBy)}
                     </p>
                   </div>
                   <div className="text-right">
@@ -207,7 +207,7 @@ export default function RTRcaReport() {
 
             {filteredTeamIncidents.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500">
-                Aucun incident assigné à votre compte n’est disponible pour le RCA.
+                Aucun incident assignÃ© Ã  votre compte nâ€™est disponible pour le RCA.
               </div>
             ) : null}
           </div>
@@ -233,7 +233,7 @@ export default function RTRcaReport() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-gray-900">Incident introuvable</h1>
-              <p className="mt-1 text-sm text-gray-500">{error || 'Aucun incident à reporter.'}</p>
+              <p className="mt-1 text-sm text-gray-500">{error || 'Aucun incident Ã  reporter.'}</p>
             </div>
           </div>
         </div>
@@ -255,9 +255,9 @@ export default function RTRcaReport() {
         <section className="card-white p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">RCA · {incident.reference}</h1>
+              <h1 className="text-2xl font-bold text-gray-900">RCA Â· {incident.reference}</h1>
               <p className="mt-1 text-sm text-gray-500">
-                {incident.application?.name ?? 'Application'} · {fullName(incident.createdBy)}
+                {incident.application?.name ?? 'Application'} Â· {fullName(incident.createdBy)}
               </p>
             </div>
             <span className="rounded-full bg-success/10 px-3 py-1 text-xs font-semibold text-success">
@@ -280,56 +280,56 @@ export default function RTRcaReport() {
           {existingReport ? (
             <div className="mt-6 rounded-2xl border border-gray-100 bg-gray-50 p-5">
               <h2 className="text-lg font-bold text-gray-900">Rapport existant</h2>
-              <p className="mt-1 text-sm text-gray-500">Un rapport RCA a déjà été enregistré pour cet incident.</p>
+              <p className="mt-1 text-sm text-gray-500">Un rapport RCA a dÃ©jÃ  Ã©tÃ© enregistrÃ© pour cet incident.</p>
               <div className="mt-4 space-y-3 text-sm">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Cause racine</p>
-                  <p className="mt-1 text-gray-700">{existingReport.rootCause ?? '—'}</p>
+                  <p className="mt-1 text-gray-700">{existingReport.rootCause ?? 'â€”'}</p>
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Solution</p>
-                  <p className="mt-1 text-gray-700">{existingReport.solution ?? '—'}</p>
+                  <p className="mt-1 text-gray-700">{existingReport.solution ?? 'â€”'}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Mesures préventives</p>
-                  <p className="mt-1 text-gray-700">{existingReport.preventiveMeasures ?? '—'}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">Mesures prÃ©ventives</p>
+                  <p className="mt-1 text-gray-700">{existingReport.preventiveMeasures ?? 'â€”'}</p>
                 </div>
               </div>
             </div>
           ) : (
             <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Cause racine identifiée *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Cause racine identifiÃ©e *</label>
                 <textarea
                   rows={4}
                   value={form.rootCause}
                   onChange={(e) => setForm((current) => ({ ...current, rootCause: e.target.value }))}
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-primary focus:outline-none"
-                  placeholder="Décrivez la cause racine..."
+                  placeholder="DÃ©crivez la cause racine..."
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Solution appliquée *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Solution appliquÃ©e *</label>
                 <textarea
                   rows={4}
                   value={form.solution}
                   onChange={(e) => setForm((current) => ({ ...current, solution: e.target.value }))}
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-primary focus:outline-none"
-                  placeholder="Décrivez les actions correctives..."
+                  placeholder="DÃ©crivez les actions correctives..."
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Mesures préventives *</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">Mesures prÃ©ventives *</label>
                 <textarea
                   rows={4}
                   value={form.preventiveMeasures}
                   onChange={(e) => setForm((current) => ({ ...current, preventiveMeasures: e.target.value }))}
                   className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm focus:border-primary focus:outline-none"
-                  placeholder="Décrivez ce qu’il faut mettre en place pour éviter la récidive..."
+                  placeholder="DÃ©crivez ce quâ€™il faut mettre en place pour Ã©viter la rÃ©cidive..."
                   required
                 />
               </div>
@@ -340,7 +340,7 @@ export default function RTRcaReport() {
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                {existingReport ? 'Rapport d�j� enregistr�' : submitting ? 'Enregistrement...' : 'Enregistrer et m assigner'}
+                {existingReport ? 'Rapport déjà enregistré' : submitting ? 'Enregistrement...' : 'Enregistrer et m assigner'}
               </button>
             </form>
           )}
@@ -348,7 +348,7 @@ export default function RTRcaReport() {
 
         <aside className="space-y-6">
           <section className="card-white p-6">
-            <h2 className="text-lg font-bold text-gray-900">Résumé</h2>
+            <h2 className="text-lg font-bold text-gray-900">RÃ©sumÃ©</h2>
             <div className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-gray-500">Technicien</span>
@@ -368,10 +368,10 @@ export default function RTRcaReport() {
           <section className="card-white p-6">
             <div className="flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-primary" />
-              <h2 className="text-lg font-bold text-gray-900">Accès</h2>
+              <h2 className="text-lg font-bold text-gray-900">AccÃ¨s</h2>
             </div>
             <p className="mt-3 text-sm text-gray-500">
-              Le rapport est activé seulement quand l’incident est pris en charge par votre compte.
+              Le rapport est activÃ© seulement quand lâ€™incident est pris en charge par votre compte.
             </p>
           </section>
         </aside>

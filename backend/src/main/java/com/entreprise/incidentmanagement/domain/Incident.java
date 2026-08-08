@@ -19,7 +19,6 @@ public class Incident {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     private String reference;
 
     @Column(nullable = false)
@@ -59,9 +58,7 @@ public class Incident {
 
     @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Attachment> attachments = new ArrayList<>();  //screenshots metadata for each
-
-
+    private List<Attachment> attachments = new ArrayList<>();
 
     @OneToOne(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
     private RcaReport rcaReport;
@@ -74,8 +71,14 @@ public class Incident {
     private LocalDateTime resolvedAt;
     private LocalDateTime closedAt;
 
-    // Échéance SLA calculée à la validation, selon la criticité de l'incident/application
+    // SLA deadline calculated on validation, based on incident/application criticality.
     private LocalDateTime slaDeadline;
+
+    // Persist the deadline for which the last warning was sent.
+    private LocalDateTime slaWarningNotifiedForDeadline;
+
+    // Persist the deadline for which the last breach alert was sent.
+    private LocalDateTime slaBreachedNotifiedForDeadline;
 
     @PrePersist
     protected void onCreate() {

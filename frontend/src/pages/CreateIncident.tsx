@@ -134,6 +134,10 @@ export default function CreateIncident() {
     setError('');
     setSuccessMessage('');
 
+    if (attachments.length === 0) {
+  setError('Veuillez ajouter au moins une pièce jointe.');
+  return;
+}
     if (!applicationId) {
       setError('Veuillez sélectionner une application liée à votre compte.');
       return;
@@ -324,7 +328,7 @@ export default function CreateIncident() {
               </div>
 
               <div className="min-w-0 self-start">
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Pièces jointes</label>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Pièces jointes <span className="text-danger">*</span></label>
                 <label className="border-2 border-dashed border-gray-200 rounded-2xl h-48 md:h-56 flex flex-col items-center justify-center bg-gray-50 hover:bg-primary/5 hover:border-primary/30 transition-colors cursor-pointer group overflow-hidden flex-shrink-0">
                   <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 text-primary">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

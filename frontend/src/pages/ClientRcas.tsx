@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
-import { FileText, Loader2, XCircle } from 'lucide-react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import { FileText, Loader2 } from 'lucide-react';
 import { useAuth } from '../lib/auth';
-import { fetchClientRcaReports, rejectRcaByClient, type RcaReportDto } from '../lib/api';
+import { fetchClientRcaReports, type RcaReportDto } from '../lib/api';
 
 export default function ClientRcas() {
   const { user } = useAuth();
   const [reports, setReports] = useState<RcaReportDto[]>([]);
   const [error, setError] = useState('');
-  const [reason, setReason] = useState('');
-  const [rejecting, setRejecting] = useState<number | null>(null);
 
   const sortedReports = useMemo(
     () =>
@@ -35,23 +33,6 @@ export default function ClientRcas() {
     void load();
   }, [user?.id]);
 
-  const reject = async (id: number) => {
-    if (!user?.id || !reason.trim()) {
-      setError('Veuillez indiquer le motif du rejet.');
-      return;
-    }
-
-    try {
-      setRejecting(id);
-      await rejectRcaByClient(id, user.id, reason.trim());
-      setReason('');
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Rejet impossible.');
-    } finally {
-      setRejecting(null);
-    }
-  };
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-8">
@@ -103,3 +84,5 @@ export default function ClientRcas() {
     </div>
   );
 }
+
+

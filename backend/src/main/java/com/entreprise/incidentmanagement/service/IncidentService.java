@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
 
-import static com.entreprise.incidentmanagement.domain.IncidentStatus.REJETE;
+import static com.entreprise.incidentmanagement.domain.IncidentStatus.*;
 import static org.springframework.data.jpa.domain.AbstractAuditable_.createdBy;
 
 @Service
@@ -126,15 +126,22 @@ public class IncidentService {
                         "Incident not found with reference: " + incidentDto.getReference()
                 ));
         Incident updated = DomainDtoMapper.toEntity(incidentDto);
-       updated.setId(existing.getId());
+        updated.setId(existing.getId());
         updated.setReference(existing.getReference());
-        updated.setStatus(existing.getStatus());
+        if(existing.getStatus()==NEW || existing.getStatus()==null){
+          updated.setStatus(IN_PROGRESS);
+        }
+        else{
+            updated.setStatus(existing.getStatus());
+        }
         updated.setApplication(existing.getApplication());
         updated.setIncidentManager(existing.getIncidentManager());
         updated.setName(existing.getName());
         updated.setCreatedBy(existing.getCreatedBy());
         updated.setDescription(existing.getDescription());
         updated.setIncidentLevel(existing.getIncidentLevel());
+        updated.setSlaWarningNotifiedForDeadline(existing.getSlaWarningNotifiedForDeadline());
+        updated.setSlaBreachedNotifiedForDeadline(existing.getSlaBreachedNotifiedForDeadline());
         if (incidentDto.getAssignedTeam() != null) {
             Team assignedTeam = teamRepository.findById(incidentDto.getAssignedTeam().getId())
                     .orElseThrow(() -> new ResourceNotFoundException(
@@ -150,6 +157,7 @@ public class IncidentService {
             }
         } else {
             updated.setAssignedTeam(existing.getAssignedTeam());
+            updated.setStatus(IN_PROGRESS);
         }
 
         if (incidentDto.getAssignedTeam() != null && existing.getAssignedTeam() == null) {
@@ -469,7 +477,8 @@ public class IncidentService {
         }
 
         return switch (level) {
-            case CRITICAL -> LocalDateTime.now().plusHours(4);
+           /* case CRITICAL -> LocalDateTime.now().plusHours(4);*/
+            case CRITICAL -> LocalDateTime.now().plusMinutes(32);
             case HIGH -> LocalDateTime.now().plusHours(6);
             case MEDIUM -> LocalDateTime.now().plusHours(8);
             case LOW -> LocalDateTime.now().plusHours(24);
@@ -477,12 +486,3 @@ public class IncidentService {
     }
 
 }
-
-
-
-
-
-
-
-
-

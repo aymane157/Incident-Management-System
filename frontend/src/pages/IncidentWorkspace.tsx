@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Bell,
@@ -25,7 +25,6 @@ import {
   STATIC_INCIDENT_MANAGER_ID,
   TeamDto,
   rejectIncidentByManager,
-  reopenRejectedIncident,
   reviewIncidentRejection,
   updateIncident,
 } from '../lib/api';
@@ -398,19 +397,6 @@ export default function IncidentWorkspace() {
       setError(err instanceof Error ? err.message : 'Unable to review incident rejection');
     }
   };
-  const handleReopenIncident = async (incident: IncidentDto) => {
-    const managerId = user?.id ?? STATIC_INCIDENT_MANAGER_ID;
-
-    try {
-      const saved = await reopenRejectedIncident(incident.reference, managerId);
-      setIncidents(prev => prev.map(item => (item.id === saved.id ? saved : item)));
-      setSelectedId(saved.id);
-      setSuccessMessage(`Incident ${saved.reference} reouvert.`);
-      setTimeout(() => setSuccessMessage(null), 4000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unable to reopen incident');
-    }
-  };
   const openEditIncident = (incident: IncidentDto) => {
     setSelectedId(null);
     setEditIncident(incident);
@@ -739,6 +725,7 @@ export default function IncidentWorkspace() {
     </div>
   );
 }
+
 
 
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
@@ -18,7 +18,6 @@ import {
   fetchRcaReports,
   fetchUserById,
   updateRcaReportStatus,
-  sendRcaToClient,
   type RcaReportDto,
   type UserDto,
 } from '../lib/api';
@@ -70,7 +69,6 @@ export default function ManagerRcaInbox() {
   const [statusMessage, setStatusMessage] = useState('');
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('mail');
   const [validating, setValidating] = useState(false);
-  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -207,20 +205,6 @@ export default function ManagerRcaInbox() {
     }
   }
 
-  async function handleSendToClient() {
-    if (!selectedReport || !currentUser) return;
-    setSending(true);
-    setError('');
-    try {
-      const updated = await sendRcaToClient(selectedReport.id, currentUser.id);
-      setReports(current => current.map(report => report.id === updated.id ? updated : report));
-      setStatusMessage(`RCA ${updated.incident?.reference ?? `#${updated.id}`} envoye au client.`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible d'envoyer le RCA au client.");
-    } finally {
-      setSending(false);
-    }
-  }
 
   if (loading && reports.length === 0) {
     return (
@@ -374,7 +358,7 @@ export default function ManagerRcaInbox() {
                             </span>
                           </div>
                           <p className="mt-1 text-xs text-gray-500">
-                            {report.incident?.application?.name ?? 'Application inconnue'} · {fullName(report.incident?.createdBy)}
+                            {report.incident?.application?.name ?? 'Application inconnue'} Â· {fullName(report.incident?.createdBy)}
                           </p>
                           <p className="mt-2 line-clamp-2 text-sm text-gray-700">
                             {report.rootCause ?? 'Aucune cause racine saisie.'}
@@ -542,3 +526,6 @@ export default function ManagerRcaInbox() {
     </div>
   );
 }
+
+
+
