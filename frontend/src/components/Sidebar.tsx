@@ -28,6 +28,7 @@ const adminNav: NavItem[] = [
   { name: 'Applications',  path: '/admin/apps',     icon: Layers   },
   { name: 'Équipes',       path: '/admin/teams',    icon: Users    },
   { name: 'SLA & Règles',  path: '/admin/sla',      icon: Shield   },
+  { name: 'Horloge SLA',   path: '/admin/sla-clock', icon: Clock   },
   { name: 'Paramètres',    path: '/admin/settings', icon: Settings },
 ];
 
@@ -154,3 +155,5 @@ export default function Sidebar() {
     </div>
   );
 }
+
+

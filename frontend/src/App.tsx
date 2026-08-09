@@ -41,6 +41,25 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function SlaClockEntry() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  switch (user.role) {
+    case 'manager':
+      return <Navigate to="/manager/sla-clock" replace />;
+    case 'rt':
+      return <Navigate to="/rt/sla-clock" replace />;
+    case 'admin':
+      return <Navigate to="/admin/sla-clock" replace />;
+    default:
+      return <Navigate to={homeRoute(user.role)} replace />;
+  }
+}
+
 function ProtectedRoute({
   children,
   allowedRoles,
@@ -112,7 +131,7 @@ function AppRoutes() {
       <Route
         path="/manager/home"
         element={
-          <ProtectedRoute allowedRoles={['manager']}>
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
             <AppLayout><ManagerHome /></AppLayout>
           </ProtectedRoute>
         }
@@ -120,7 +139,7 @@ function AppRoutes() {
       <Route
         path="/manager/workspace"
         element={
-          <ProtectedRoute allowedRoles={['manager']}>
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
             <AppLayout><IncidentWorkspace /></AppLayout>
           </ProtectedRoute>
         }
@@ -128,7 +147,7 @@ function AppRoutes() {
       <Route
         path="/manager/rca"
         element={
-          <ProtectedRoute allowedRoles={['manager']}>
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
             <AppLayout><ManagerRcaInbox /></AppLayout>
           </ProtectedRoute>
         }
@@ -136,7 +155,15 @@ function AppRoutes() {
       <Route
         path="/manager/sla-clock"
         element={
-          <ProtectedRoute allowedRoles={['manager']}>
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
+            <AppLayout><SlaClock /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/manager/horloge-sla"
+        element={
+          <ProtectedRoute allowedRoles={['manager', 'admin']}>
             <AppLayout><SlaClock /></AppLayout>
           </ProtectedRoute>
         }
@@ -175,6 +202,22 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/admin/sla-clock"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AppLayout><SlaClock /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/horloge-sla"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AppLayout><SlaClock /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/settings"
         element={
           <ProtectedRoute allowedRoles={['admin']}>
@@ -186,7 +229,7 @@ function AppRoutes() {
       <Route
         path="/rt/home"
         element={
-          <ProtectedRoute allowedRoles={['rt']}>
+          <ProtectedRoute allowedRoles={['rt', 'admin']}>
             <AppLayout><RTHome /></AppLayout>
           </ProtectedRoute>
         }
@@ -194,7 +237,15 @@ function AppRoutes() {
       <Route
         path="/rt/sla-clock"
         element={
-          <ProtectedRoute allowedRoles={['rt']}>
+          <ProtectedRoute allowedRoles={['rt', 'admin']}>
+            <AppLayout><SlaClock /></AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rt/horloge-sla"
+        element={
+          <ProtectedRoute allowedRoles={['rt', 'admin']}>
             <AppLayout><SlaClock /></AppLayout>
           </ProtectedRoute>
         }
@@ -202,7 +253,7 @@ function AppRoutes() {
       <Route
         path="/rt/incident/:id"
         element={
-          <ProtectedRoute allowedRoles={['rt']}>
+          <ProtectedRoute allowedRoles={['rt', 'admin']}>
             <AppLayout><RTIncidentDetail /></AppLayout>
           </ProtectedRoute>
         }
@@ -210,7 +261,7 @@ function AppRoutes() {
       <Route
         path="/rt/report"
         element={
-          <ProtectedRoute allowedRoles={['rt']}>
+          <ProtectedRoute allowedRoles={['rt', 'admin']}>
             <AppLayout><RTRcaReport /></AppLayout>
           </ProtectedRoute>
         }
@@ -218,13 +269,13 @@ function AppRoutes() {
       <Route
         path="/rt/report/:referenceId"
         element={
-          <ProtectedRoute allowedRoles={['rt']}>
+          <ProtectedRoute allowedRoles={['rt', 'admin']}>
             <AppLayout><RTRcaReport /></AppLayout>
           </ProtectedRoute>
         }
       />
 
-      <Route path="/sla-clock" element={<AppLayout><SlaClock /></AppLayout>} />
+      <Route path="/sla-clock" element={<SlaClockEntry />} />
       <Route path="/incidents/:referenceId" element={<AppLayout><IncidentDetail /></AppLayout>} />
 
       <Route
@@ -244,3 +295,5 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+

@@ -22,6 +22,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SlaMonitoringService {
     private static final Duration SLA_WARNING_WINDOW = Duration.ofMinutes(30);
+    private static final Duration SLA_WARNING_WINDOW_EXTREME=Duration.ofMinutes(10);
 
     private final IncidentRepository incidentRepository;
     private final NotificationService notificationService;
@@ -72,6 +73,19 @@ public class SlaMonitoringService {
 
         Duration remaining = Duration.between(now, deadline);
         if (remaining.compareTo(SLA_WARNING_WINDOW) <= 0) {
+            System.out.println("Send warning window" );
+            if (deadline.equals(incident.getSlaWarningNotifiedForDeadline())) {
+                return;
+            }
+            incident.setSlaWarningNotifiedForDeadline(deadline);
+            sendSlaNotification(
+                    incident,
+                    recipient,
+                    NotificationType.SLA_PROCHE_DEPASSEMENT,
+                    buildWarningMessage(incident, remaining)
+            );
+        }
+        if (remaining.compareTo(SLA_WARNING_WINDOW_EXTREME) <= 0) {
             System.out.println("Send warning window" );
             if (deadline.equals(incident.getSlaWarningNotifiedForDeadline())) {
                 return;
