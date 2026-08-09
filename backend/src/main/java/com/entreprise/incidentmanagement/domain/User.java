@@ -22,7 +22,7 @@ public class User {
 
     private String email;
 
-    private String password;
+    private String passwordHash;
 
     @ManyToOne
     @JoinColumn(name = "team_id")

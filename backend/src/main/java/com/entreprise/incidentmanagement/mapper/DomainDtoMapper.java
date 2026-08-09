@@ -1,4 +1,4 @@
-package com.entreprise.incidentmanagement.mapper;
+﻿package com.entreprise.incidentmanagement.mapper;
 
 import com.entreprise.incidentmanagement.domain.Application;
 import com.entreprise.incidentmanagement.domain.Attachment;
@@ -96,7 +96,7 @@ public final class DomainDtoMapper {
                 .firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
                 .email(entity.getEmail())
-                .password(entity.getPassword())
+                .password(null)
                 .role(entity.getRole())
                 .teamId(entity.getTeam() != null ? entity.getTeam().getId() : null)
                 .teamName(entity.getTeam() != null ? entity.getTeam().getName() : null)
@@ -112,7 +112,7 @@ public final class DomainDtoMapper {
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
                 .email(dto.getEmail())
-                .password(dto.getPassword())
+                .passwordHash(dto.getPassword())
                 .role(dto.getRole())
                 .build();
         user.setId(dto.getId());
@@ -315,3 +315,4 @@ public final class DomainDtoMapper {
         return dtos.stream().map(DomainDtoMapper::toEntity).collect(Collectors.toList());
     }
 }
+

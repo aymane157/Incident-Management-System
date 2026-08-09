@@ -1,38 +1,112 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+﻿import { createContext, useContext, useState, type ReactNode } from 'react';
+import { API_BASE_URL } from './api';
+import {
+  clearAuthSession,
+  loadAuthSession,
+  saveAuthSession,
+  type StoredAuthUser,
+} from './session';
 
 export type UserRole = 'client' | 'manager' | 'admin' | 'rt';
 
-export interface AuthUser {
-  id: number;
-  name: string;
-  email: string;
-  role: UserRole;
-}
+export type AuthUser = StoredAuthUser;
 
-// Static team-member identity used by the RT role.
-// In a real app these would come from the JWT/session.
-export const STATIC_RT_TEAM_ID = 1;
-export const STATIC_RT_TEAM_MEMBER_ID = 2;
+export type LoginCredentials = {
+  email: string;
+  password: string;
+};
 
 interface AuthContextValue {
   user: AuthUser | null;
-  login: (user: AuthUser) => void;
+  login: (credentials: LoginCredentials) => Promise<AuthUser>;
   logout: () => void;
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
+type LoginResponse = {
+  userId: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+  token: string;
+  expiresInMs: number;
+  role?: string | null;
+};
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
+function normalizeRole(role?: string | null): UserRole {
+  switch (role) {
+    case 'ADMIN':
+      return 'admin';
+    case 'CLIENT':
+      return 'client';
+    case 'INCIDENT_MANAGER':
+      return 'manager';
+    case 'MEMBRE_EQUIPE':
+    case 'RESPONSABLE_TRAITEMENT':
+      return 'rt';
+    default:
+      return 'client';
+  }
+}
+
+function buildUser(response: LoginResponse): AuthUser {
+  const name = [response.firstName, response.lastName].filter(Boolean).join(' ') || response.username || 'Utilisateur';
+
+  return {
+    id: response.userId,
+    name,
+    email: response.username ?? '',
+    role: normalizeRole(response.role),
+    token: response.token,
+    backendRole: response.role ?? 'CLIENT',
+    expiresInMs: response.expiresInMs,
+  };
+}
+
+async function parseError(response: Response): Promise<string> {
+  const contentType = response.headers.get('content-type') ?? '';
+
+  if (contentType.includes('application/json')) {
+    const payload = await response.json().catch(() => null);
+    if (payload && typeof payload === 'object') {
+      if (typeof payload.message === 'string') return payload.message;
+      if (typeof payload.error === 'string') return payload.error;
+      if (typeof payload.detail === 'string') return payload.detail;
+    }
+  }
+
+  const text = await response.text().catch(() => '');
+  return text.trim() || `Request failed with status ${response.status}`;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => loadAuthSession()?.user ?? null);
 
-  const login = (u: AuthUser) => setUser(u);
-  const logout = () => setUser(null);
+  const login = async (credentials: LoginCredentials) => {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      throw new Error(await parseError(response));
+    }
+
+    const payload = (await response.json()) as LoginResponse;
+    const nextUser = buildUser(payload);
+    setUser(nextUser);
+    saveAuthSession({ user: nextUser });
+    return nextUser;
+  };
+
+  const logout = () => {
+    setUser(null);
+    clearAuthSession();
+  };
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
@@ -40,8 +114,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   );
 }
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);

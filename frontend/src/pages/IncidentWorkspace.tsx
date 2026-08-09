@@ -22,7 +22,6 @@ import {
   IncidentDto,
   IncidentLevel,
   IncidentStatus,
-  STATIC_INCIDENT_MANAGER_ID,
   TeamDto,
   rejectIncidentByManager,
   reviewIncidentRejection,
@@ -298,7 +297,12 @@ export default function IncidentWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchManagerIncidents(STATIC_INCIDENT_MANAGER_ID);
+      if (!user?.id) {
+        setError('Utilisateur non connecte');
+        return;
+      }
+
+      const data = await fetchManagerIncidents(user.id);
       setIncidents(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load incidents');
@@ -357,7 +361,11 @@ export default function IncidentWorkspace() {
   };
 
   const handleProposeRejection = async (incident: IncidentDto) => {
-    const managerId = user?.id ?? STATIC_INCIDENT_MANAGER_ID;
+    if (!user?.id) {
+      setError('Utilisateur non connecte');
+      return;
+    }
+    const managerId = user.id;
     const reason = window.prompt(`Motif du rejet pour ${incident.reference}`);
     if (!reason || !reason.trim()) {
       return;
@@ -378,7 +386,11 @@ export default function IncidentWorkspace() {
   };
 
   const handleReviewRejection = async (incident: IncidentDto, validated: boolean) => {
-    const managerId = user?.id ?? STATIC_INCIDENT_MANAGER_ID;
+    if (!user?.id) {
+      setError('Utilisateur non connecte');
+      return;
+    }
+    const managerId = user.id;
 
     try {
       const saved = await reviewIncidentRejection(incident.reference, {
@@ -418,7 +430,7 @@ export default function IncidentWorkspace() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Workspace incident manager</h1>
           <p className="text-sm text-gray-500">
-            Incidents recu pour le manager connecte. User id statique: {STATIC_INCIDENT_MANAGER_ID}.
+            Incidents recu pour le manager connecte. User id: {user?.id ?? 'non renseigne'}.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -725,6 +737,9 @@ export default function IncidentWorkspace() {
     </div>
   );
 }
+
+
+
 
 
 

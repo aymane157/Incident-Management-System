@@ -1,4 +1,4 @@
-package com.entreprise.incidentmanagement.config;
+﻿package com.entreprise.incidentmanagement.config;
 
 import com.entreprise.incidentmanagement.domain.Application;
 import com.entreprise.incidentmanagement.domain.Attachment;
@@ -20,6 +20,7 @@ import com.entreprise.incidentmanagement.repository.RcaReportRepository;
 import com.entreprise.incidentmanagement.repository.TeamRepository;
 import com.entreprise.incidentmanagement.repository.UserRepository;
 import com.entreprise.incidentmanagement.service.IncidentService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
     private final NotificationRepository notificationRepository;
     private final RcaReportRepository rcaReportRepository;
     private final IncidentService incidentService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
@@ -120,8 +122,8 @@ public class BootstrapDataRunner implements CommandLineRunner {
         );
 
         Incident financeIncident = createIncidentIfMissing(
-                "Incident - ERP Finance - Export bloqué",
-                "Les exports comptables restent bloqués lors de la génération mensuelle.",
+                "Incident - ERP Finance - Export bloquÃ©",
+                "Les exports comptables restent bloquÃ©s lors de la gÃ©nÃ©ration mensuelle.",
                 erpFinance,
                 jean,
                 marie,
@@ -143,14 +145,14 @@ public class BootstrapDataRunner implements CommandLineRunner {
                     financeIncident,
                     thomas,
                     marie,
-                    "Verrouillage de session prolongé sur la base de données de production.",
-                    "Redémarrage contrôlé du service et purge du verrou persistant.",
+                    "Verrouillage de session prolongÃ© sur la base de donnÃ©es de production.",
+                    "RedÃ©marrage contrÃ´lÃ© du service et purge du verrou persistant.",
                     "Ajouter une surveillance quotidienne des verrous et des jobs longs."
             );
         }
 
         createIncidentIfMissing(
-                "Incident - CRM - Accès réseau instable",
+                "Incident - CRM - AccÃ¨s rÃ©seau instable",
                 "Les utilisateurs CRM subissent des coupures intermittentes.",
                 crm,
                 jean,
@@ -161,7 +163,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
         );
 
         createIncidentIfMissing(
-                "Incident - Intranet - Mise à jour portail",
+                "Incident - Intranet - Mise Ã  jour portail",
                 "Demande de correction visuelle sur la page d'accueil intranet.",
                 intranet,
                 jean,
@@ -174,28 +176,28 @@ public class BootstrapDataRunner implements CommandLineRunner {
         createNotificationIfMissing(
                 marie,
                 NotificationType.NOUVEL_INCIDENT,
-                "Un nouvel incident de type ERP Finance a été créé et nécessite une prise en charge.",
+                "Un nouvel incident de type ERP Finance a Ã©tÃ© crÃ©Ã© et nÃ©cessite une prise en charge.",
                 financeIncident
         );
 
         createNotificationIfMissing(
                 marie,
                 NotificationType.INCIDENT_AFFECTE,
-                "Un incident CRM a été affecté à votre équipe applicative.",
+                "Un incident CRM a Ã©tÃ© affectÃ© Ã  votre Ã©quipe applicative.",
                 null
         );
 
         createNotificationIfMissing(
                 admin,
                 NotificationType.MESSAGE_RECU,
-                "Le bootstrap de données a été exécuté avec succès.",
+                "Le bootstrap de donnÃ©es a Ã©tÃ© exÃ©cutÃ© avec succÃ¨s.",
                 null
         );
 
         createNotificationIfMissing(
                 nadia,
                 NotificationType.SLA_PROCHE_DEPASSEMENT,
-                "Un suivi sur les bases de données est recommandé avant l'échéance SLA.",
+                "Un suivi sur les bases de donnÃ©es est recommandÃ© avant l'Ã©chÃ©ance SLA.",
                 null
         );
     }
@@ -313,7 +315,7 @@ public class BootstrapDataRunner implements CommandLineRunner {
                                 .firstName(firstName)
                                 .lastName(lastName)
                                 .email(email)
-                                .password(password)
+                                .passwordHash(passwordEncoder.encode(password))
                                 .role(role)
                                 .team(team)
                                 .build()
@@ -464,3 +466,4 @@ public class BootstrapDataRunner implements CommandLineRunner {
         );
     }
 }
+
