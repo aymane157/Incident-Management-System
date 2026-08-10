@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   Bell,
@@ -297,11 +297,6 @@ export default function IncidentWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      if (!user?.id) {
-        setError('Utilisateur non connecte');
-        return;
-      }
-
       const data = await fetchManagerIncidents(user.id);
       setIncidents(data);
     } catch (err) {
@@ -361,11 +356,7 @@ export default function IncidentWorkspace() {
   };
 
   const handleProposeRejection = async (incident: IncidentDto) => {
-    if (!user?.id) {
-      setError('Utilisateur non connecte');
-      return;
-    }
-    const managerId = user.id;
+    const managerId = user?.id;
     const reason = window.prompt(`Motif du rejet pour ${incident.reference}`);
     if (!reason || !reason.trim()) {
       return;
@@ -386,11 +377,7 @@ export default function IncidentWorkspace() {
   };
 
   const handleReviewRejection = async (incident: IncidentDto, validated: boolean) => {
-    if (!user?.id) {
-      setError('Utilisateur non connecte');
-      return;
-    }
-    const managerId = user.id;
+    const managerId = user?.id;
 
     try {
       const saved = await reviewIncidentRejection(incident.reference, {
@@ -430,7 +417,7 @@ export default function IncidentWorkspace() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Workspace incident manager</h1>
           <p className="text-sm text-gray-500">
-            Incidents recu pour le manager connecte. User id: {user?.id ?? 'non renseigne'}.
+            Incidents recu pour le manager connecte.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -737,7 +724,6 @@ export default function IncidentWorkspace() {
     </div>
   );
 }
-
 
 
 

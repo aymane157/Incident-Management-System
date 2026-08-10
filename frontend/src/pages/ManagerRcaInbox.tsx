@@ -474,9 +474,7 @@ export default function ManagerRcaInbox() {
               <MessageSquareText className="h-4 w-4 text-primary" />
               <h2 className="text-lg font-bold text-gray-900">Validation et envoi</h2>
             </div>
-            <p className="mt-3 text-sm text-gray-500">
-              La validation est persistante. L&apos;envoi mail ou message reste une demonstration frontend.
-            </p>
+          
 
             <div className="mt-4 space-y-3">
               <button
@@ -491,32 +489,8 @@ export default function ManagerRcaInbox() {
 
            
 
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDeliveryMode('mail')}
-                  className={`rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                    deliveryMode === 'mail'
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Mail
-                </button>
-              
-              </div>
 
-              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-700">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-gray-400">Demo</p>
-                <p className="mt-2">
-                  {deliveryMode === 'mail'
-                    ? `Pret a  un envoi mail au client ${fullName(selectedReport?.incident?.createdBy)}.`
-                    : `Pret a  un message dans l app pour ${fullName(selectedReport?.incident?.createdBy)}.`}
-                </p>
-                <p className="mt-2 text-xs text-gray-500">
-                  Statut actuel: {selectedReport?.validatedByManager ? 'valide' : 'en attente de validation'}.
-                </p>
-              </div>
+             
 
             
             </div>

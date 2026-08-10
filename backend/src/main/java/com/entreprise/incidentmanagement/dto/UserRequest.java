@@ -2,12 +2,13 @@ package com.entreprise.incidentmanagement.dto;
 
 import com.entreprise.incidentmanagement.domain.Role;
 
-public record LoginResponse(
-        Long userId,
+public record UserRequest(
+        Long id,
         String firstName,
         String lastName,
-        String username,
-        String token,
-        long expiresInMs,
-        Role role
-) {}
+        String email,
+        String password,
+        Role role,
+        Long teamId
+) {
+}

@@ -1,112 +1,98 @@
-﻿import { createContext, useContext, useState, type ReactNode } from 'react';
-import { API_BASE_URL } from './api';
-import {
-  clearAuthSession,
-  loadAuthSession,
-  saveAuthSession,
-  type StoredAuthUser,
-} from './session';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { fetchUserById, login as loginRequest, setAuthToken, clearAuthToken, type UserDto } from './api';
 
 export type UserRole = 'client' | 'manager' | 'admin' | 'rt';
 
-export type AuthUser = StoredAuthUser;
-
-export type LoginCredentials = {
+export interface AuthUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  name: string;
   email: string;
-  password: string;
-};
+  role: UserRole;
+  token: string;
+  teamId?: number | null;
+  teamName?: string | null;
+  teamFunctionRole?: string | null;
+}
 
 interface AuthContextValue {
   user: AuthUser | null;
-  login: (credentials: LoginCredentials) => Promise<AuthUser>;
+  login: (credentials: { email: string; password: string }) => Promise<AuthUser>;
   logout: () => void;
 }
 
-type LoginResponse = {
-  userId: number;
-  firstName?: string | null;
-  lastName?: string | null;
-  username?: string | null;
-  token: string;
-  expiresInMs: number;
-  role?: string | null;
+const STORAGE_KEY = 'incident-management-auth';
+
+const ROLE_MAP: Record<string, UserRole> = {
+  ADMIN: 'admin',
+  CLIENT: 'client',
+  INCIDENT_MANAGER: 'manager',
+  MEMBRE_EQUIPE: 'rt',
+  RESPONSABLE_TRAITEMENT: 'rt',
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-function normalizeRole(role?: string | null): UserRole {
-  switch (role) {
-    case 'ADMIN':
-      return 'admin';
-    case 'CLIENT':
-      return 'client';
-    case 'INCIDENT_MANAGER':
-      return 'manager';
-    case 'MEMBRE_EQUIPE':
-    case 'RESPONSABLE_TRAITEMENT':
-      return 'rt';
-    default:
-      return 'client';
-  }
+function mapRole(role?: string | null): UserRole {
+  return (role && ROLE_MAP[role]) || 'client';
 }
 
-function buildUser(response: LoginResponse): AuthUser {
-  const name = [response.firstName, response.lastName].filter(Boolean).join(' ') || response.username || 'Utilisateur';
+function buildAuthUser(loginData: Awaited<ReturnType<typeof loginRequest>>, profile: UserDto): AuthUser {
+  const firstName = profile.firstName ?? loginData.firstName ?? '';
+  const lastName = profile.lastName ?? loginData.lastName ?? '';
+  const name = [firstName, lastName].filter(Boolean).join(' ') || loginData.username;
 
   return {
-    id: response.userId,
+    id: loginData.userId,
+    firstName,
+    lastName,
     name,
-    email: response.username ?? '',
-    role: normalizeRole(response.role),
-    token: response.token,
-    backendRole: response.role ?? 'CLIENT',
-    expiresInMs: response.expiresInMs,
+    email: profile.email ?? loginData.username,
+    role: mapRole(loginData.role),
+    token: loginData.token,
+    teamId: profile.teamId ?? null,
+    teamName: profile.teamName ?? null,
+    teamFunctionRole: profile.teamFunctionRole ?? null,
   };
-}
-
-async function parseError(response: Response): Promise<string> {
-  const contentType = response.headers.get('content-type') ?? '';
-
-  if (contentType.includes('application/json')) {
-    const payload = await response.json().catch(() => null);
-    if (payload && typeof payload === 'object') {
-      if (typeof payload.message === 'string') return payload.message;
-      if (typeof payload.error === 'string') return payload.error;
-      if (typeof payload.detail === 'string') return payload.detail;
-    }
-  }
-
-  const text = await response.text().catch(() => '');
-  return text.trim() || `Request failed with status ${response.status}`;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => loadAuthSession()?.user ?? null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return null;
 
-  const login = async (credentials: LoginCredentials) => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      throw new Error(await parseError(response));
+    try {
+      const parsed = JSON.parse(stored) as AuthUser;
+      if (parsed.token) {
+        setAuthToken(parsed.token);
+        return parsed;
+      }
+    } catch {
+      // ignore invalid stored auth state
     }
 
-    const payload = (await response.json()) as LoginResponse;
-    const nextUser = buildUser(payload);
+    return null;
+  });
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+      setAuthToken(user.token);
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+      clearAuthToken();
+    }
+  }, [user]);
+
+  const login = async (credentials: { email: string; password: string }) => {
+    const auth = await loginRequest(credentials);
+    setAuthToken(auth.token);
+    const profile = await fetchUserById(auth.userId);
+    const nextUser = buildAuthUser(auth, profile);
     setUser(nextUser);
-    saveAuthSession({ user: nextUser });
     return nextUser;
   };
 
-  const logout = () => {
-    setUser(null);
-    clearAuthSession();
-  };
+  const logout = () => setUser(null);
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
@@ -114,6 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     </AuthContext.Provider>
   );
 }
+
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);

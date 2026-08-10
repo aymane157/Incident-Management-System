@@ -1,4 +1,4 @@
-﻿package com.entreprise.incidentmanagement.mapper;
+package com.entreprise.incidentmanagement.mapper;
 
 import com.entreprise.incidentmanagement.domain.Application;
 import com.entreprise.incidentmanagement.domain.Attachment;
@@ -14,9 +14,9 @@ import com.entreprise.incidentmanagement.dto.NotificationDto;
 import com.entreprise.incidentmanagement.dto.RcaReportDto;
 import com.entreprise.incidentmanagement.dto.TeamDto;
 import com.entreprise.incidentmanagement.dto.UserDto;
+import com.entreprise.incidentmanagement.dto.UserRequest;
 
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public final class DomainDtoMapper {
@@ -96,7 +96,6 @@ public final class DomainDtoMapper {
                 .firstName(entity.getFirstName())
                 .lastName(entity.getLastName())
                 .email(entity.getEmail())
-                .password(null)
                 .role(entity.getRole())
                 .teamId(entity.getTeam() != null ? entity.getTeam().getId() : null)
                 .teamName(entity.getTeam() != null ? entity.getTeam().getName() : null)
@@ -112,12 +111,30 @@ public final class DomainDtoMapper {
                 .firstName(dto.getFirstName())
                 .lastName(dto.getLastName())
                 .email(dto.getEmail())
-                .passwordHash(dto.getPassword())
                 .role(dto.getRole())
                 .build();
         user.setId(dto.getId());
         if (dto.getTeamId() != null) {
             Team team = Team.builder().id(dto.getTeamId()).build();
+            user.setTeam(team);
+        }
+        return user;
+    }
+
+    public static User toEntity(UserRequest request) {
+        if (request == null) {
+            return null;
+        }
+        User user = User.builder()
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .email(request.email())
+                .passwordHash(request.password())
+                .role(request.role())
+                .build();
+        user.setId(request.id());
+        if (request.teamId() != null) {
+            Team team = Team.builder().id(request.teamId()).build();
             user.setTeam(team);
         }
         return user;

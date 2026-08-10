@@ -1,4 +1,5 @@
-﻿package com.entreprise.incidentmanagement.service;
+
+package com.entreprise.incidentmanagement.service;
 
 import com.entreprise.incidentmanagement.domain.User;
 import com.entreprise.incidentmanagement.dto.LoginRequest;

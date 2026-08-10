@@ -1,4 +1,4 @@
-﻿package com.entreprise.incidentmanagement.config;
+package com.entreprise.incidentmanagement.config;
 
 import com.entreprise.incidentmanagement.domain.Application;
 import com.entreprise.incidentmanagement.domain.Attachment;

@@ -3,10 +3,12 @@ package com.entreprise.incidentmanagement.service;
 import com.entreprise.incidentmanagement.domain.Role;
 import com.entreprise.incidentmanagement.domain.User;
 import com.entreprise.incidentmanagement.dto.UserDto;
+import com.entreprise.incidentmanagement.dto.UserRequest;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
 import com.entreprise.incidentmanagement.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<User> findAll() {
@@ -54,18 +57,25 @@ public class UserService {
     }
 
     @Transactional
-    public UserDto saveDto(UserDto userDto) {
-        return DomainDtoMapper.toDto(save(DomainDtoMapper.toEntity(userDto)));
+    public UserDto saveDto(UserRequest userRequest) {
+        if (userRequest.password() == null || userRequest.password().isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+        User user = DomainDtoMapper.toEntity(userRequest);
+        user.setPasswordHash(passwordEncoder.encode(userRequest.password()));
+        return DomainDtoMapper.toDto(save(user));
     }
 
     @Transactional
-    public UserDto updateDto(Long id, UserDto userDto) {
+    public UserDto updateDto(Long id, UserRequest userRequest) {
         User existing = findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id " + id));
-        User updated = DomainDtoMapper.toEntity(userDto);
+        User updated = DomainDtoMapper.toEntity(userRequest);
         updated.setId(existing.getId());
-        if (userDto.getPassword() == null || userDto.getPassword().isBlank()) {
-            updated.setPassword(existing.getPassword());
+        if (userRequest.password() == null || userRequest.password().isBlank()) {
+            updated.setPasswordHash(existing.getPasswordHash());
+        } else {
+            updated.setPasswordHash(passwordEncoder.encode(userRequest.password()));
         }
         return DomainDtoMapper.toDto(userRepository.save(updated));
     }

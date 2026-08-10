@@ -1,219 +1,204 @@
-﻿import { useState, type FormEvent } from 'react';
-import type { LucideIcon } from 'lucide-react';
-import { Eye, EyeOff, LogIn, Shield, Settings, Users, Wrench } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, type LoginCredentials, type UserRole } from '../lib/auth';
+import { Eye, EyeOff, Users, Shield, Settings, Wrench } from 'lucide-react';
+import { useAuth, UserRole } from '../lib/auth';
 
-const demoAccounts: {
+const roles: {
   id: UserRole;
   label: string;
   sublabel: string;
-  icon: LucideIcon;
-  email: string;
-  password: string;
-  accent: string;
+  icon: React.ElementType;
+  homeRoute: string;
 }[] = [
   {
     id: 'client',
     label: 'Client',
-    sublabel: 'eddadd361@gmail.com / client123',
+    sublabel: 'Declarez & suivez\nvos incidents',
     icon: Users,
-    email: 'eddadd361@gmail.com',
-    password: 'client123',
-    accent: 'from-sky-500/20 to-cyan-400/10',
+    homeRoute: '/client/home',
   },
   {
     id: 'manager',
     label: 'Incident Manager',
-    sublabel: 'aymanemwa@gmail.com / manager123',
+    sublabel: 'Gerez & pilotez\nles incidents',
     icon: Shield,
-    email: 'aymanemwa@gmail.com',
-    password: 'manager123',
-    accent: 'from-emerald-500/20 to-lime-400/10',
+    homeRoute: '/manager/home',
   },
   {
     id: 'admin',
     label: 'Administrateur',
-    sublabel: 'admin_xd@dxc.com / admin123',
+    sublabel: 'Gerez les utilisateurs\n& la configuration',
     icon: Settings,
-    email: 'admin_xd@dxc.com',
-    password: 'admin123',
-    accent: 'from-amber-500/20 to-orange-400/10',
+    homeRoute: '/admin',
   },
   {
     id: 'rt',
-    label: 'Responsable traitement',
-    sublabel: 'amina.elidrissi@dxc.com / rt123',
+    label: "Membre d'equipe",
+    sublabel: 'Prenez en charge\nles incidents de votre equipe',
     icon: Wrench,
-    email: 'amina.elidrissi@dxc.com',
-    password: 'rt123',
-    accent: 'from-violet-500/20 to-fuchsia-400/10',
+    homeRoute: '/rt/home',
   },
 ];
 
 function homeRoute(role: UserRole): string {
-  switch (role) {
-    case 'client':
-      return '/client/home';
-    case 'manager':
-      return '/manager/home';
-    case 'admin':
-      return '/admin';
-    case 'rt':
-      return '/rt/home';
-  }
+  return roles.find((item) => item.id === role)?.homeRoute ?? '/client/home';
 }
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState<UserRole>('client');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
+  const selected = roles.find(r => r.id === role)!;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
     setError('');
 
     try {
-      const user = await login({ email, password });
+      const user = await login({ email: email.trim(), password });
       navigate(homeRoute(user.role), { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Impossible de se connecter.');
+      setError(err instanceof Error ? err.message : 'Connexion impossible.');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
-  }
-
-  function applyDemoAccount(account: LoginCredentials) {
-    setEmail(account.email);
-    setPassword(account.password);
-  }
+  };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(88,28,135,0.35),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.2),_transparent_30%),linear-gradient(135deg,_#070816,_#111827_55%,_#1f1147)] px-6 py-10 text-white">
-      <div className="absolute inset-0 opacity-70">
-        <div className="absolute -left-24 top-16 h-72 w-72 rounded-full bg-cyan-500/20 blur-3xl" />
-        <div className="absolute right-0 top-1/3 h-80 w-80 rounded-full bg-fuchsia-600/20 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-sky-500/10 blur-3xl" />
+    <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#0b001a] to-[#160033]">
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+          <path d="M-200,1000 C300,700 500,400 1200,-100" fill="none" stroke="url(#grad1)" strokeWidth="1.5" opacity="0.6" />
+          <path d="M-200,1050 C350,750 550,450 1250,-50" fill="none" stroke="url(#grad1)" strokeWidth="1" opacity="0.4" />
+          <path d="M-200,1100 C400,800 600,500 1300,0" fill="none" stroke="url(#grad1)" strokeWidth="0.5" opacity="0.2" />
+          <path d="M-200,1150 C200,900 800,200 1500,100" fill="none" stroke="url(#grad1)" strokeWidth="1" opacity="0.5" />
+          <path d="M-200,1200 C250,950 850,250 1550,150" fill="none" stroke="url(#grad1)" strokeWidth="0.5" opacity="0.3" />
+          <defs>
+            <linearGradient id="grad1" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#b300ff" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="#8a2be2" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#4b0082" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#3a0088] rounded-full mix-blend-screen filter blur-[150px] opacity-20"></div>
+        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#5c00a3] rounded-full mix-blend-screen filter blur-[150px] opacity-20"></div>
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-        <section className="space-y-8">
-          <div>
-            <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.35em] text-white/70 backdrop-blur">
-              DXC Technology
-            </div>
-            <h1 className="mt-6 max-w-2xl text-4xl font-black tracking-tight text-white md:text-6xl">
-              Connectez-vous pour piloter le flux d&apos;incidents.
-            </h1>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-white/70 md:text-base">
-              L&apos;authentification utilise maintenant le backend JWT. Choisissez un compte de démonstration ou saisissez vos identifiants réels.
-            </p>
+      <div className="relative z-10 w-full max-w-lg flex flex-col items-center px-6">
+        <div className="flex flex-col items-center mb-8">
+          <div className="text-white text-[3rem] bg-gradient-to-r from-blue-500 to-purple-800 bg-clip-text text-transparent font-bold tracking-tighter leading-none mb-1.5">
+            DXC
           </div>
+          <div className="text-[11px] tracking-[0.35em] text-white font-medium uppercase ml-1">
+            Technology
+          </div>
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {demoAccounts.map((account) => {
-              const Icon = account.icon;
+        <div className="w-full mb-5">
+          <p className="text-[11px] text-gray-400 text-center mb-3 tracking-wider uppercase font-medium">
+            Je me connecte en tant que
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {roles.map(r => {
+              const Icon = r.icon;
+              const isSelected = role === r.id;
               return (
                 <button
-                  key={account.id}
+                  key={r.id}
                   type="button"
-                  onClick={() => applyDemoAccount(account)}
-                  className={`group rounded-3xl border border-white/10 bg-gradient-to-br ${account.accent} p-4 text-left shadow-2xl shadow-black/20 backdrop-blur transition hover:-translate-y-0.5 hover:border-white/20`}
+                  onClick={() => setRole(r.id)}
+                  className={
+                    'flex flex-col items-center gap-1.5 py-3.5 rounded-xl border-2 transition-all duration-200 ' +
+                    (isSelected
+                      ? 'border-purple-500 bg-purple-500/20 text-white shadow-[0_0_20px_rgba(168,85,247,0.3)]'
+                      : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:bg-white/10')
+                  }
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/50">Compte démo</p>
-                      <h2 className="mt-2 text-lg font-bold text-white">{account.label}</h2>
-                      <p className="mt-1 text-xs text-white/70">{account.sublabel}</p>
-                    </div>
-                    <div className="rounded-2xl bg-white/10 p-3 text-white/90 transition group-hover:bg-white/15">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                  </div>
+                  <Icon className="w-5 h-5" />
+                  <span className="text-xs font-semibold tracking-wide">{r.label}</span>
+                  <span className="text-[10px] opacity-60 leading-tight text-center px-2 whitespace-pre-line">
+                    {r.sublabel}
+                  </span>
                 </button>
               );
             })}
           </div>
-        </section>
+        </div>
 
-        <section className="rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl md:p-8">
-          <div className="mb-8 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/50">Accès sécurisé</p>
-            <h2 className="mt-3 text-3xl font-bold text-white">Connexion</h2>
-            <p className="mt-2 text-sm text-white/65">Utilisez votre adresse e-mail et votre mot de passe.</p>
-          </div>
-
+        <div className="w-full bg-white rounded-xl shadow-2xl p-7 mb-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                Adresse e-mail
-              </label>
+              <label className="text-[11px] font-semibold text-gray-700">Adresse e-mail</label>
               <input
-                id="email"
                 type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                id="email"
                 placeholder="exemple@dxc.com"
-                className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:border-cyan-300 focus:outline-none"
-                autoComplete="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="w-full bg-white border border-gray-200 rounded-md py-2.5 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[#3b0b8c] focus:border-[#3b0b8c] transition-all placeholder:text-gray-400"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                Mot de passe
-              </label>
+              <label className="text-[11px] font-semibold text-gray-700">Mot de passe</label>
               <div className="relative">
                 <input
-                  id="password"
                   type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  placeholder="????????"
                   value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-4 py-3 pr-12 text-sm text-white placeholder:text-white/35 focus:border-cyan-300 focus:outline-none"
-                  autoComplete="current-password"
+                  onChange={e => setPassword(e.target.value)}
+                  className="w-full bg-white border border-gray-200 rounded-md py-2.5 pl-3 pr-10 text-sm focus:outline-none focus:ring-1 focus:ring-[#3b0b8c] focus:border-[#3b0b8c] transition-all font-serif tracking-widest placeholder:tracking-normal placeholder:font-sans placeholder:text-gray-400"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  className="absolute inset-y-0 right-0 flex items-center px-4 text-white/50 transition hover:text-white"
-                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center space-x-2 cursor-pointer group">
+                <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 text-[#3b0b8c] focus:ring-[#3b0b8c]" />
+                <span className="text-[11px] font-medium text-gray-600 group-hover:text-gray-900 transition-colors">Se souvenir de moi</span>
+              </label>
+              <a href="#" className="text-[11px] text-[#3b0b8c] font-semibold hover:underline">Mot de passe oublie ?</a>
+            </div>
+
             {error ? (
-              <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
                 {error}
               </div>
             ) : null}
 
             <button
+              id="login-submit"
               type="submit"
-              disabled={loading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 to-sky-500 px-4 py-3.5 text-sm font-semibold text-slate-950 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full bg-[#3b0b8c] hover:bg-[#2c086e] text-white font-medium py-3 rounded-md transition-colors text-sm mt-3 disabled:opacity-60"
+              disabled={submitting}
             >
-              <LogIn className="h-4 w-4" />
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {submitting ? 'Connexion...' : `Se connecter en tant que ${selected.label}`}
             </button>
           </form>
+        </div>
 
-          <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/30 p-4 text-xs leading-6 text-white/60">
-            Comptes de démonstration disponibles avec les mots de passe affichés à gauche. La session est conservée localement jusqu&apos;à la déconnexion.
-          </div>
-        </section>
+        <div className="text-center text-[10px] text-gray-400 font-light">
+          ? 2026 DXC Technology. Tous droits reserves.
+        </div>
       </div>
     </div>
   );
 }
-
-

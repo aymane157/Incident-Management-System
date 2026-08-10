@@ -1,6 +1,7 @@
 package com.entreprise.incidentmanagement.controller;
 
 import com.entreprise.incidentmanagement.dto.UserDto;
+import com.entreprise.incidentmanagement.dto.UserRequest;
 import com.entreprise.incidentmanagement.exception.ResourceNotFoundException;
 import com.entreprise.incidentmanagement.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -41,13 +42,13 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserDto> create(@RequestBody UserDto userDto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.saveDto(userDto));
+    public ResponseEntity<UserDto> create(@RequestBody UserRequest userRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.saveDto(userRequest));
     }
 
     @PutMapping("/{id}")
-    public UserDto update(@PathVariable Long id, @RequestBody UserDto userDto) {
-        return userService.updateDto(id, userDto);
+    public UserDto update(@PathVariable Long id, @RequestBody UserRequest userRequest) {
+        return userService.updateDto(id, userRequest);
     }
 
     @DeleteMapping("/{id}")

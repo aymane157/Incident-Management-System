@@ -1,4 +1,4 @@
-﻿import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/auth';
 import type { UserRole } from './lib/auth';
 import Login from './pages/Login';
@@ -85,10 +85,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={user ? <Navigate to={homeRoute(user.role)} replace /> : <Login />}
-      />
+      <Route path="/login" element={<Login />} />
 
       <Route
         path="/client/home"
@@ -298,6 +295,5 @@ export default function App() {
     </AuthProvider>
   );
 }
-
 
 

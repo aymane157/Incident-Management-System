@@ -1,0 +1,652 @@
+\documentclass[12pt,a4paper]{report}
+
+% ============================================================================
+% PACKAGE IMPORTS & CONFIGURATION
+% ============================================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc, shadow.blur}
+
+% tikz-uml package for class and sequence diagrams
+\usepackage{tikz-uml}
+
+\usepackage[hidelinks,colorlinks=true,linkcolor=dxcpurple,citecolor=dxcblue,urlcolor=dxcblue]{hyperref}
+
+% ============================================================================
+% CUSTOM COLOR PALETTE (DXC BRAND & MODERN TECH HARMONY)
+% ============================================================================
+\definecolor{dxcpurple}{RGB}{95, 37, 159}      % Primary Accent: DXC Purple (#5F259F)
+\definecolor{dxcblack}{RGB}{18, 18, 18}        % Dark Slate Body Text
+\definecolor{dxcblue}{RGB}{0, 114, 206}        % Secondary Accent: DXC Blue
+\definecolor{dxcgray}{RGB}{245, 247, 250}      % Background Light Gray
+\definecolor{codeborder}{RGB}{220, 224, 230}   % Listing Border
+\definecolor{javakeyword}{RGB}{147, 51, 234}   % Java Keyword Color
+\definecolor{javastring}{RGB}{16, 185, 129}    % Java String Color
+\definecolor{javacomment}{RGB}{107, 114, 128}  % Java Comment Color
+\definecolor{xmltag}{RGB}{37, 99, 235}        % XML Tag Color
+
+% ============================================================================
+% CODE LISTING STYLES
+% ============================================================================
+\lstdefinestyle{JavaStyle}{
+    language=Java,
+    backgroundcolor=\color{dxcgray},
+    basicstyle=\ttfamily\footnotesize\color{dxcblack},
+    keywordstyle=\color{javakeyword}\bfseries,
+    stringstyle=\color{javastring},
+    commentstyle=\color{javacomment}\itshape,
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=8pt,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{codeborder},
+    captionpos=b,
+    tabsize=2,
+    showstringspaces=false
+}
+
+\lstdefinestyle{XmlStyle}{
+    language=XML,
+    backgroundcolor=\color{dxcgray},
+    basicstyle=\ttfamily\tiny\color{dxcblack},
+    tagstyle=\color{xmltag}\bfseries,
+    keywordstyle=\color{javakeyword},
+    stringstyle=\color{javastring},
+    commentstyle=\color{javacomment}\itshape,
+    breaklines=true,
+    frame=single,
+    rulecolor=\color{codeborder},
+    captionpos=b,
+    tabsize=2
+}
+
+\lstset{style=JavaStyle}
+
+% ============================================================================
+% DOCUMENT METADATA
+% ============================================================================
+\title{
+    \vspace{-2cm}
+    \includegraphics[width=0.35\textwidth]{dxc_logo.png} \\[1cm] % Fallback logo representation
+    \Huge \bfseries \color{dxcpurple} Enterprise Incident Management System \\
+    \large \color{dxcblack} Real-Time SLA Enforcement \& RCA Quality Governance \\
+    \vspace{0.5cm}
+    \small \color{gray} Technical Architecture \& Implementation Report
+}
+\author{
+    \textbf{Author:} Aymane \\
+    \textbf{Host Organization:} DXC Technology Morocco \\
+    \textbf{Domain:} IT Service Management (ITSM) \& Digital Transformation \\
+    \textbf{Internship Period:} June 2026 -- August 2026
+}
+\date{\today}
+
+% ============================================================================
+% BEGIN DOCUMENT
+% ============================================================================
+\begin{document}
+
+% ----------------------------------------------------------------------------
+% TITLE PAGE
+% ----------------------------------------------------------------------------
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    {\Huge \bfseries \color{dxcpurple} DXC Technology Morocco \par}
+    \vspace{0.4cm}
+    {\Large \scshape Engineering \& Digital Transformation Division \par}
+    \vspace{1.5cm}
+    
+    \rule{\linewidth}{1.5pt} \\[0.4cm]
+    {\huge \bfseries Enterprise Incident Management System \\[0.3cm]}
+    {\large Technical Architecture, Real-Time SLA Watchdog, and RCA Quality Governance Platform \par}
+    \rule{\linewidth}{1.5pt} \\[1.5cm]
+    
+    \begin{minipage}{0.48\textwidth}
+        \begin{flushleft} \large
+            \emph{Author:}\\
+            \textbf{Aymane} \\
+            Software Engineering Intern
+        \end{flushleft}
+    \end{minipage}
+    ~
+    \begin{minipage}{0.48\textwidth}
+        \begin{flushright} \large
+            \emph{Host Supervisors:}\\
+            \textbf{DXC Technical Lead} \\
+            DXC Morocco ITSM Practice
+        \end{flushright}
+    \end{minipage}
+    
+    \vfill
+    
+    {\large \textbf{Internship Period:} June 2026 -- August 2026 \par}
+    {\small Casablanca \& Rabat Nearshore Centers, Morocco \par}
+    \vspace{0.8cm}
+    {\large \today \par}
+\end{titlepage}
+
+% ----------------------------------------------------------------------------
+% TABLE OF CONTENTS
+% ----------------------------------------------------------------------------
+\currentpdfbookmark{Table of Contents}{toc}
+\tableofcontents
+\newpage
+
+% ============================================================================
+% CHAPTER 1: COMPANY & CONTEXT
+% ============================================================================
+\chapter{Company \& Context}
+
+\section{DXC Technology \& DXC Morocco Overview}
+DXC Technology (NYSE: DXC) is a Fortune 500 global IT services leader that helps multinational enterprises run their mission-critical systems and operations while modernizing IT, optimizing data architectures, and ensuring security and scalability across public, private, and hybrid clouds. Operating across more than 70 countries, DXC delivers end-to-end technology solutions encompassing IT Service Management (ITSM), cloud infrastructure, cybersecurity, and software engineering. In Morocco, DXC Technology maintains a prominent strategic footprint with state-of-the-art delivery centers in the Casablanca Nearshore Park and Technopolis Rabat. DXC Morocco serves as a key regional technology hub for the Europe, Middle East, and Africa (EMEA) region, driving digital transformation initiatives for major enterprise clients across finance, telecommunications, public sector, and manufacturing domains.
+
+\section{Internship Context \& Framework}
+This technical project report was authored within the scope of a software engineering internship conducted at DXC Technology Morocco from June 2026 to August 2026. Embedded within the ITSM Practice team, the primary objective of this internship was to design, architect, and implement a production-ready, full-stack Enterprise Incident Management Web Application. The application addresses critical operational friction in ticket lifecycle management by providing automated Service Level Agreement (SLA) monitoring, real-time multi-channel notifications, and strict Root Cause Analysis (RCA) quality gates prior to ticket resolution and closure.
+
+% ============================================================================
+% CHAPTER 2: PROJECT CONCEPT
+% ============================================================================
+\chapter{Project Concept \& Key Differentiators}
+
+\section{Problem Statement \& User Personas}
+In modern enterprise IT operations, service outages and application degradation translate directly into financial losses and reputation damage. Conventional ticketing systems often suffer from passive SLA monitoring, where deadline breaches are only detected reactively after customer escalations. Furthermore, tickets are frequently closed prematurely without proper root-cause investigation, leading to recurring incidents.
+
+The Enterprise Incident Management System addresses these challenges by orchestrating a structured incident lifecycle enforced by automated SLA mechanisms and mandatory RCA reviews. The system caters to four primary user personas:
+\begin{description}
+    \item[Client (\texttt{CLIENT}):] End-users or client application representatives who report incidents, attach diagnostic evidence, track live progress, and review submitted RCA reports.
+    \item[Incident Manager (\texttt{INCIDENT\_MANAGER}):] Operational leads responsible for validating incoming tickets, assigning them to specialized technical teams, reviewing team rejection proposals, and validating RCA submissions before resolution.
+    \item[Team Member / Responsable Traitement (\texttt{MEMBRE\_EQUIPE} / \texttt{RESPONSABLE\_TRAITEMENT}):] Technical specialists who claim assigned tickets, perform diagnostic investigations, submit rejection proposals when tickets fall outside team scope, write comprehensive RCA reports, and implement fixes.
+    \item[Administrator (\texttt{ADMIN}):] Systems administrators managing platform configuration, user roles, application catalogs, and team assignments.
+\end{description}
+
+\section{Core Concept: Dual-Clock SLA & Breach Detection}
+At the core of the application lies a severity-tiered SLA enforcement engine. SLA deadlines are dynamically assigned upon ticket validation based on the incident severity level (\texttt{IncidentLevel}):
+\begin{itemize}
+    \item \textbf{CRITICAL:} 32-minute resolution window (configurable to 4 hours for enterprise SLA baselines).
+    \item \textbf{HIGH:} 6-hour resolution window.
+    \item \textbf{MEDIUM:} 8-hour resolution window.
+    \item \textbf{LOW:} 24-hour resolution window.
+\end{itemize}
+
+The system tracks dual temporal dimensions: the \emph{Response SLA} (time taken to validate and assign an incident) and the \emph{Resolution SLA} (time taken to resolve the incident). To ensure proactive operational awareness, the system maintains two warning alert thresholds before SLA expiry:
+\begin{enumerate}
+    \item \textbf{Standard Warning Window:} Triggered when remaining time $\le 30$ minutes.
+    \item \textbf{Extreme Risk Window:} Triggered when remaining time $\le 10$ minutes.
+\end{enumerate}
+
+\section{Key Architectural Differentiators}
+
+\subsection{Hybrid SLA Detection Model}
+Unlike traditional polling-only systems or purely reactive event handlers, this project implements a \textbf{Hybrid SLA Detection Model}:
+\begin{itemize}
+    \item \textbf{Scheduled Watchdog Engine:} A thread-pooled background scheduler (\texttt{SlaMonitoringService} annotated with \texttt{@Scheduled(fixedDelay = 60000)}) executes every minute. It queries active incidents in \texttt{IN\_PROGRESS} status, calculates exact duration remainders against \texttt{slaDeadline}, updates persistent warning flags (\texttt{slaWarningNotifiedForDeadline}, \texttt{slaBreachedNotifiedForDeadline}), automatically transitions breached tickets to \texttt{CLOSED}, and dispatches multi-channel alerts.
+    \item \textbf{Event-Driven Push Engine:} Direct user state mutations (e.g., ticket assignment, claim, validation, status changes) immediately trigger synchronized state updates and push notifications via JavaMailSender and STOMP WebSocket channels, eliminating latency for real-time user interactions.
+\end{itemize}
+
+\subsection{RCA-Gated Closure Governance Rule}
+To eliminate "band-aid" ticket resolution and prevent recurring outages, the platform enforces an \textbf{RCA-Gated Closure Rule}. High-severity and Critical incidents cannot be transitioned to \texttt{RESOLVED} status by technical teams directly. Instead:
+\begin{enumerate}
+    \item The technical specialist must author an explicit Root Cause Analysis report (\texttt{RcaReport}) detailing the \emph{Root Cause}, \emph{Resolution Solution}, and \emph{Preventive Measures}.
+    \item The Incident Manager must review and formally validate the RCA report (\texttt{validatedByManager = true}).
+    \item Validation by the manager automatically updates the incident status to \texttt{RESOLVED} and transmits the RCA report to the Client for final acceptance or rejection.
+\end{enumerate}
+
+% ============================================================================
+% CHAPTER 3: FUNCTIONAL OVERVIEW & PERMISSIONS MATRIX
+% ============================================================================
+\chapter{Functional Overview \& Role Security Matrix}
+
+\section{Main Business Workflows}
+The application exposes six primary functional workflows:
+\begin{enumerate}
+    \item \textbf{Authentication \& Session Handling:} Secure JWT creation via \texttt{AuthController}, storing user identity, roles, and expiration time.
+    \item \textbf{Client Incident Creation:} Multipart request uploading incident metadata along with multi-file diagnostic attachments persisted locally by \texttt{FileStorageService}.
+    \item \textbf{Incident Triage \& Claiming:} Incident Managers assign tickets to teams; technical team members claim tickets (\texttt{claimIncident}), shifting status from \texttt{NEW}/\texttt{VALIDATED} to \texttt{IN\_PROGRESS}.
+    \item \textbf{Rejection Workflow:} Team members can propose ticket rejection with written justification (\texttt{rejectIncidentWithReason}). Incident Managers review the proposal (\texttt{reviewIncidentRejection}) to either confirm rejection (\texttt{REJETE}) or send it back to \texttt{IN\_PROGRESS}. Managers can also reopen rejected tickets (\texttt{reopenRejectedIncident}).
+    \item \textbf{RCA Drafting \& Manager Validation:} Technical teams create RCA entries; Incident Managers approve them via \texttt{updateStatus}, triggering automatic status progression to \texttt{RESOLVED}.
+    \item \textbf{Multi-Channel Notification Dispatch:} Persistent notification logs stored in PostgreSQL and broadcasted asynchronously via SMTP email and STOMP WebSockets.
+\end{enumerate}
+
+\section{Role \& Permission Security Matrix}
+Security enforcement is implemented at the Spring Security filter chain level (\texttt{SecurityConfig}) and backed by \texttt{@PreAuthorize} annotations. Table~\ref{tab:role_matrix} details the complete role-permission matrix reflecting the actual codebase configuration.
+
+\begin{table}[htbp]
+\centering
+\caption{System Role \& Endpoint Permission Security Matrix}
+\label{tab:role_matrix}
+\vspace{0.3cm}
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Endpoint / Feature Path} & \textbf{ADMIN} & \textbf{CLIENT} & \textbf{INCIDENT\_MANAGER} & \textbf{MEMBRE\_EQUIPE} & \textbf{RESPONSABLE\_TRAITEMENT} \\ \midrule
+\texttt{POST /auth/login} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\texttt{GET /users/**} & \checkmark & Read Only & Read Only & Read Only & Read Only \\
+\texttt{POST, PUT, DELETE /users/**} & \checkmark & \texttimes & \texttimes & \texttimes & \texttimes \\
+\texttt{GET /teams/**, /applications/**} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\texttt{POST, PUT, DELETE /teams/**} & \checkmark & \texttimes & \texttimes & \texttimes & \texttimes \\
+\texttt{POST /incidents/client} & \texttimes & \checkmark & \texttimes & \texttimes & \texttimes \\
+\texttt{POST /incidents/*/claim/*} & \checkmark & \texttimes & \checkmark & \checkmark & \checkmark \\
+\texttt{POST /incidents/*/rejectIncidentWithReason} & \checkmark & \texttimes & \checkmark & \checkmark & \checkmark \\
+\texttt{POST /incidents/*/rejectIncidentByManager} & \checkmark & \texttimes & \checkmark & \texttimes & \texttimes \\
+\texttt{POST /incidents/*/reviewIncidentRejection} & \checkmark & \texttimes & \checkmark & \texttimes & \texttimes \\
+\texttt{POST /incidents/*/reopenRejectedIncident/*} & \checkmark & \texttimes & \checkmark & \texttimes & \texttimes \\
+\texttt{GET /rca-reports/**} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\texttt{POST, PUT /rca-reports/**} & \checkmark & \texttimes & \checkmark & \checkmark & \checkmark \\
+\texttt{POST /rca-reports/*/client-rejection} & \texttimes & \checkmark & \texttimes & \texttimes & \texttimes \\
+\texttt{GET /notifications/**} & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================================
+% CHAPTER 4: SYSTEM ARCHITECTURE
+% ============================================================================
+\chapter{System Architecture}
+
+\section{Layered Monolithic Architecture}
+The backend is structured around a classic 3-tier Spring Boot architecture integrated with real-time schedulers and messaging components:
+\begin{itemize}
+    \item \textbf{Presentation / Security Layer:} HTTP requests pass through \texttt{JwtAuthFilter} which validates Bearer tokens via \texttt{JwtService} and populates the \texttt{SecurityContextHolder}. REST Controllers (\texttt{IncidentController}, \texttt{AuthController}, \texttt{RcaReportController}, \texttt{NotificationController}) delegate immediately to domain services.
+    \item \textbf{Business Logic Layer:} \texttt{IncidentService} orchestrates ticket state machine changes; \texttt{SlaMonitoringService} executes background SLA deadline checks; \texttt{RcaReportService} manages RCA validation workflows; \texttt{NotificationService} handles template generation and dispatch.
+    \item \textbf{Persistence Layer:} Spring Data JPA Repositories (\texttt{IncidentRepository}, \texttt{UserRepository}, \texttt{RcaReportRepository}, \texttt{NotificationRepository}) execute optimized database queries against PostgreSQL (with H2 used for local development testing).
+    \item \textbf{External Integration Components:} \texttt{FileStorageService} writes uploaded diagnostic files to the local file system. \texttt{JavaMailSender} dispatches SMTP emails, while WebSocket STOMP messaging broadcasts live updates to React clients.
+\end{itemize}
+
+\section{TikZ Component \& Dataflow Architecture Diagram}
+Figure~\ref{fig:architecture} presents the native TikZ architectural diagram depicting component interaction, layer boundaries, and external system integrations.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.8cm,
+    font=\sffamily\small,
+    box/.style={rectangle, draw=dxcpurple!80, fill=dxcgray, thick, rounded corners=4pt, minimum width=2.8cm, minimum height=1.0cm, align=center},
+    extbox/.style={rectangle, draw=dxcblue!80, fill=dxcblue!10, thick, rounded corners=4pt, minimum width=2.6cm, minimum height=1.0cm, align=center},
+    procbox/.style={rectangle, draw=dxcpurple, dashed, fill=white, inner sep=12pt, rounded corners=8pt},
+    line/.style={draw, -{Latex[scale=0.9]}, thick, dxcpurple!90},
+    extline/.style={draw, -{Latex[scale=0.9]}, thick, dxcblue!90}
+]
+
+    % External Client Layer
+    \node [extbox] (client) {\textbf{React 19 Frontend}\\ \scriptsize (TypeScript / Vite)};
+
+    % Spring Boot Process Box Boundaries
+    \node [box, right=2.0cm of client] (jwt) {\textbf{JwtAuthFilter}\\ \scriptsize (Security Filter)};
+    \node [box, right=1.5cm of jwt] (controller) {\textbf{REST Controllers}\\ \scriptsize (Incident, Auth, RCA)};
+    \node [box, below=1.5cm of controller] (service) {\textbf{Service Layer}\\ \scriptsize (Incident, RCA, Auth)};
+    \node [box, left=1.8cm of service] (watchdog) {\textbf{@Scheduled SLA Watchdog}\\ \scriptsize (SlaMonitoringService)};
+
+    % Persistence & External Infrastructure
+    \node [extbox, below=1.8cm of service] (postgres) {\textbf{PostgreSQL DB}\\ \scriptsize (JPA / Hibernate)};
+    \node [extbox, left=1.5cm of postgres] (filestore) {\textbf{File Storage}\\ \scriptsize (Diagnostic Attachments)};
+    \node [extbox, right=1.5cm of postgres] (mail) {\textbf{JavaMailSender}\\ \scriptsize (SMTP Gateway)};
+    \node [extbox, right=1.5cm of service] (websocket) {\textbf{WebSocket Broadcaster}\\ \scriptsize (STOMP / SockJS)};
+
+    % Grouping Container (Spring Boot Process)
+    \begin{scope}[on background layer]
+        \node [procbox, fit=(jwt) (controller) (service) (watchdog), label={[dxcpurple, font=\bfseries]top:Spring Boot Monolith Application Container}] (container) {};
+    \end{scope}
+
+    % Connections & Dataflow Labeled Arrows
+    \path [extline] (client) -- node[above, font=\tiny]{HTTP / REST} node[below, font=\tiny]{+ Bearer JWT} (jwt);
+    \path [line] (jwt) -- node[above, font=\tiny]{Authenticated} (controller);
+    \path [line] (controller) -- node[right, font=\tiny]{DTO / Service Calls} (service);
+    \path [line] (watchdog) -- node[above, font=\tiny]{Fixed Delay 60s} node[below, font=\tiny]{evaluateSlaBreaches()} (service);
+    
+    \path [line] (service) -- node[right, font=\tiny]{Spring Data JPA} (postgres);
+    \path [line] (service) |- node[above, font=\tiny, pos=0.7]{Store Attachments} (filestore);
+    \path [line] (service) |- node[above, font=\tiny, pos=0.7]{Dispatch Mail} (mail);
+    \path [line] (service) -- node[above, font=\tiny]{Push Alerts} (websocket);
+    \path [extline] (websocket) |- node[right, font=\tiny, pos=0.3]{Live STOMP Push} (client);
+
+\end{tikzpicture}
+\caption{Spring Boot System Architecture \& Component Dataflow Diagram}
+\label{fig:architecture}
+\end{figure}
+
+% ============================================================================
+% CHAPTER 5: CLASS DIAGRAM
+% ============================================================================
+\chapter{Domain Model \& Class Diagram}
+
+\section{Domain Entity Analysis}
+The core domain model captures the full state space of incidents, user roles, notifications, attachments, and RCA reports:
+\begin{itemize}
+    \item \textbf{\texttt{Incident}:} Root entity managing references, status transitions, SLA timestamps, application linking, and assigned team members.
+    \item \textbf{\texttt{User}:} Represents actors in the system linked to a \texttt{Role} enum (\texttt{ADMIN}, \texttt{CLIENT}, \texttt{INCIDENT\_MANAGER}, \texttt{MEMBRE\_EQUIPE}, \texttt{RESPONSABLE\_TRAITEMENT}) and an optional \texttt{Team}.
+    \item \textbf{\texttt{RcaReport}:} One-to-One relation with \texttt{Incident}, holding \texttt{rootCause}, \texttt{solution}, \texttt{preventiveMeasures}, and manager validation status.
+    \item \textbf{\texttt{Attachment}:} One-to-Many entity owned by \texttt{Incident}, tracking file names, disk storage paths, content types, and file sizes.
+    \item \textbf{\texttt{Notification}:} Stores recipient reference, message payload, and \texttt{NotificationType} enum.
+\end{itemize}
+
+\section{TikZ-UML Class Diagram}
+Figure~\ref{fig:class_diagram} depicts the complete domain model and service relationship class diagram created with \texttt{tikz-uml}.
+
+\begin{figure}[htbp]
+\centering
+\scalebox{0.78}{
+\begin{tikzpicture}
+    % Domain Entities
+    \umlclass[x=0, y=0]{User}{
+        - id : Long \\
+        - firstName : String \\
+        - lastName : String \\
+        - email : String \\
+        - passwordHash : String \\
+        - role : Role
+    }{
+        + getEmail() : String \\
+        + getRole() : Role
+    }
+
+    \umlclass[x=6.5, y=0]{Incident}{
+        - id : Long \\
+        - reference : String \\
+        - name : String \\
+        - description : String \\
+        - status : IncidentStatus \\
+        - incidentLevel : IncidentLevel \\
+        - rejectionReason : String \\
+        - createdAt : LocalDateTime \\
+        - slaDeadline : LocalDateTime
+    }{
+        + onCreate() : void \\
+        + setStatus(status) : void
+    }
+
+    \umlclass[x=13.0, y=0]{RcaReport}{
+        - id : Long \\
+        - rootCause : String \\
+        - solution : String \\
+        - preventiveMeasures : String \\
+        - validatedByManager : boolean \\
+        - sentToClient : boolean \\
+        - rejectedByClient : boolean
+    }{
+        + onCreate() : void
+    }
+
+    \umlclass[x=6.5, y=-6.5]{Attachment}{
+        - id : Long \\
+        - fileName : String \\
+        - filePath : String \\
+        - contentType : String \\
+        - fileSize : Long \\
+        - uploadedAt : LocalDateTime
+    }{
+        + onUpload() : void
+    }
+
+    \umlclass[x=0, y=-6.5]{Notification}{
+        - id : Long \\
+        - message : String \\
+        - type : NotificationType \\
+        - createdAt : LocalDateTime
+    }{
+    }
+
+    % Service Layer Classes
+    \umlclass[x=13.0, y=-6.5]{IncidentService}{
+        - incidentRepository : IncidentRepository \\
+        - fileStorageService : FileStorageService \\
+        - notificationService : NotificationService
+    }{
+        + saveDto(dto) : IncidentDto \\
+        + clientSave(request) : IncidentDto \\
+        + claimIncident(id, userId) : IncidentDto \\
+        + rejectIncidentWithReason(...) : IncidentDto
+    }
+
+    % Enumerations
+    \umlenum[x=0, y=4.5]{Role}{
+        ADMIN \\
+        CLIENT \\
+        INCIDENT\_MANAGER \\
+        MEMBRE\_EQUIPE \\
+        RESPONSABLE\_TRAITEMENT
+    }
+
+    \umlenum[x=6.5, y=4.5]{IncidentStatus}{
+        NEW \\
+        REJETE \\
+        VALIDATED \\
+        IN\_PROGRESS \\
+        RESOLVED \\
+        CLOSED
+    }
+
+    \umlenum[x=13.0, y=4.5]{IncidentLevel}{
+        CRITICAL \\
+        HIGH \\
+        MEDIUM \\
+        LOW
+    }
+
+    % Relationships
+    \umlassoc[arg1=role, pos1=0.2]{User}{Role}
+    \umlassoc[arg1=status, pos1=0.2]{Incident}{IncidentStatus}
+    \umlassoc[arg1=level, pos1=0.2]{Incident}{IncidentLevel}
+    
+    \umlaggreg[arg1=createdBy, pos1=0.2, arg2=incidents, pos2=0.8]{Incident}{User}
+    \umlaggreg[arg1=incident, pos1=0.2, arg2=rcaReport, pos2=0.8]{RcaReport}{Incident}
+    \umlaggreg[arg1=incident, pos1=0.2, arg2=attachments, pos2=0.8]{Attachment}{Incident}
+    \umlaggreg[arg1=recipient, pos1=0.2]{Notification}{User}
+    
+    \umldep[arg1=manages, pos1=0.5]{IncidentService}{Incident}
+
+\end{tikzpicture}
+}
+\caption{Unified Domain Model \& Service Layer TikZ-UML Class Diagram}
+\label{fig:class_diagram}
+\end{figure}
+
+% ============================================================================
+% CHAPTER 6: SEQUENCE DIAGRAMS
+% ============================================================================
+\chapter{Sequence Diagrams}
+
+This chapter illustrates the runtime execution flow across system components for three primary operational scenarios.
+
+\section{User Registration \& Authentication Flow}
+Figure~\ref{fig:seq_auth} details the sequence for user authentication, password verification, and JWT token issuance.
+
+\begin{figure}[htbp]
+\centering
+\scalebox{0.82}{
+\begin{tikzpicture}
+\begin{umlseqdiag}
+    \umlactor[x=0]{client}{Client}
+    \umlcontrol[x=3.2]{ctrl}{AuthController}
+    \umlservice[x=6.5]{srv}{AuthService}
+    \umlrepository[x=9.8]{repo}{UserRepository}
+    \umlservice[x=13.0]{jwt}{JwtService}
+
+    \begin{umlcall}[op={login(request)}, return={200 OK (LoginResponse)}]{client}{ctrl}
+        \begin{umlcall}[op={login(request)}, return={LoginResponse}]{ctrl}{srv}
+            \begin{umlcall}[op={findByEmail(email)}, return={Optional<User>}]{srv}{repo}
+            \end{umlcall}
+            \begin{umlcall}[op={matches(raw, hash)}, return={true}]{srv}{srv}
+            \end{umlcall}
+            \begin{umlcall}[op={generateToken(user)}, return={JWT String}]{srv}{jwt}
+            \end{umlcall}
+        \end{umlcall}
+    \end{umlcall}
+\end{umlseqdiag}
+\end{tikzpicture}
+}
+\caption{User Authentication \& JWT Issuance TikZ-UML Sequence Diagram}
+\label{fig:seq_auth}
+\end{figure}
+
+\section{Client Incident Creation with File Attachments}
+Figure~\ref{fig:seq_create} outlines the multipart incident creation process, including attachment storage on disk and initial email notifications.
+
+\begin{figure}[htbp]
+\centering
+\scalebox{0.75}{
+\begin{tikzpicture}
+\begin{umlseqdiag}
+    \umlactor[x=0]{client}{Client}
+    \umlcontrol[x=3.0]{ctrl}{IncidentController}
+    \umlservice[x=6.2]{srv}{IncidentService}
+    \umlservice[x=9.4]{file}{FileStorageService}
+    \umlrepository[x=12.6]{repo}{IncidentRepository}
+    \umlservice[x=15.8]{notif}{NotificationService}
+
+    \begin{umlcall}[op={createClientIncident(MultipartRequest)}, return={211 Created (IncidentDto)}]{client}{ctrl}
+        \begin{umlcall}[op={clientSave(request)}, return={IncidentDto}]{ctrl}{srv}
+            \begin{umlcall}[op={save(Incident[Status=NEW])}, return={savedIncident}]{srv}{repo}
+            \end{umlcall}
+            \begin{umlcall}[op={store(file, savedIncident)}, return={Attachment}]{srv}{file}
+            \end{umlcall}
+            \begin{umlcall}[op={sendMailNotification(dto, email)}, return={NotificationDto}]{srv}{notif}
+            \end{umlcall}
+        \end{umlcall}
+    \end{umlcall}
+\end{umlseqdiag}
+\end{tikzpicture}
+}
+\caption{Client Incident Creation \& Multipart Persistence TikZ-UML Sequence Diagram}
+\label{fig:seq_create}
+\end{figure}
+
+\section{Automated SLA Breach Watchdog \& Alert Push}
+Figure~\ref{fig:seq_sla} presents the background watchdog process evaluating active SLA deadlines every 60 seconds and broadcasting alerts upon expiry.
+
+\begin{figure}[htbp]
+\centering
+\scalebox{0.78}{
+\begin{tikzpicture}
+\begin{umlseqdiag}
+    \umlcontrol[x=0]{timer}{ThreadPoolTaskScheduler}
+    \umlservice[x=3.5]{watchdog}{SlaMonitoringService}
+    \umlrepository[x=7.5]{repo}{IncidentRepository}
+    \umlservice[x=11.5]{notif}{NotificationService}
+    \umlactor[x=15.0]{user}{Assigned Manager / User}
+
+    \begin{umlcall}[op={@Scheduled fixedDelay=60000}, return={void}]{timer}{watchdog}
+        \begin{umlcall}[op={evaluateSlaBreaches()}, return={void}]{watchdog}{watchdog}
+            \begin{umlcall}[op={findByStatus(IN\_PROGRESS)}, return={List<Incident>}]{watchdog}{repo}
+            \end{umlcall}
+            \begin{umlcall}[op={evaluateIncident(incident, now)}, return={void}]{watchdog}{watchdog}
+                \begin{umlcall}[op={setStatus(CLOSED)}, return={void}]{watchdog}{repo}
+                \end{umlcall}
+                \begin{umlcall}[op={sendMailNotification(mail)}, return={void}]{watchdog}{notif}
+                    \begin{umlcall}[op={SMTP Email / STOMP Push}, return={delivered}]{notif}{user}
+                    \end{umlcall}
+                \end{umlcall}
+            \end{umlcall}
+        \end{umlcall}
+    \end{umlcall}
+\end{umlseqdiag}
+\end{tikzpicture}
+}
+\caption{Automated SLA Watchdog Breach Detection TikZ-UML Sequence Diagram}
+\label{fig:seq_sla}
+\end{figure}
+
+% ============================================================================
+% APPENDIX: STANDALONE DRAW.IO XML SPECIFICATION
+% ============================================================================
+\appendix
+\chapter{Standalone draw.io XML Architecture Specification}
+
+This appendix provides the complete, standalone XML diagram specification compatible with \url{https://app.diagrams.net} (draw.io). Developers and software architects can copy this raw XML block directly into draw.io via \textbf{File $\rightarrow$ Import from $\rightarrow$ XML} to edit the system architecture diagram interactively.
+
+\begin{lstlisting}[style=XmlStyle, caption={draw.io Compatible Architecture XML Block (\texttt{mxfile})}]
+<mxfile host="app.diagrams.net" modified="2026-08-09T22:00:00.000Z" agent="DXC Enterprise Architect" version="21.0.0" type="device">
+  <diagram id="dxc-incident-architecture" name="Spring Boot Architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Outer Spring Boot Container -->
+        <mxCell id="container" value="Spring Boot Monolith Application Container" style="swimlane;whiteSpace=wrap;html=1;startSize=23;dashed=1;fillColor=#F5F7FA;strokeColor=#5F259F;strokeWidth=2;fontStyle=1;fontColor=#5F259F;" vertex="1" parent="1">
+          <mxGeometry x="280" y="120" width="620" height="420" as="geometry" />
+        </mxCell>
+        
+        <!-- Frontend Component -->
+        <mxCell id="client" value="React 19 Frontend&#10;(TypeScript / Vite)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF3FA;strokeColor=#0072CE;strokeWidth=2;fontStyle=1;fontColor=#0072CE;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="160" height="80" as="geometry" />
+        </mxCell>
+        
+        <!-- Internal Spring Components -->
+        <mxCell id="jwt" value="JwtAuthFilter&#10;(Security Filter)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5F259F;strokeColor=#5F259F;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="container">
+          <mxGeometry x="40" y="80" width="140" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="controllers" value="REST Controllers&#10;(Incident, Auth, RCA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5F259F;strokeWidth=2;fontStyle=1;" vertex="1" parent="container">
+          <mxGeometry x="240" y="80" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="services" value="Service Layer&#10;(Incident, RCA, Auth)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#5F259F;strokeWidth=2;fontStyle=1;" vertex="1" parent="container">
+          <mxGeometry x="240" y="220" width="160" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="watchdog" value="@Scheduled SLA Watchdog&#10;(SlaMonitoringService)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;fontStyle=1;fontColor=#E65100;" vertex="1" parent="container">
+          <mxGeometry x="40" y="220" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- External Databases and Gateways -->
+        <mxCell id="postgres" value="PostgreSQL Database&#10;(Spring Data JPA)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#EBF3FA;strokeColor=#0072CE;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="600" width="160" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="filestore" value="Local File Storage&#10;(Uploads Directory)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF3FA;strokeColor=#0072CE;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="300" y="600" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="mail" value="JavaMailSender&#10;(SMTP Mail Server)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF3FA;strokeColor=#0072CE;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="600" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="websocket" value="WebSocket Broadcaster&#10;(STOMP / SockJS)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EBF3FA;strokeColor=#0072CE;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="340" width="160" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Connectors -->
+        <mxCell id="c1" value="HTTP / REST + JWT" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthochordal=1;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#5F259F;strokeWidth=2;" edge="1" parent="1" source="client" target="jwt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#5F259F;strokeWidth=2;" edge="1" parent="container" source="jwt" target="controllers">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#5F259F;strokeWidth=2;" edge="1" parent="container" source="controllers" target="services">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c4" value="fixedDelay 60s" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#E65100;strokeWidth=2;fontColor=#E65100;" edge="1" parent="container" source="watchdog" target="services">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c5" value="JPA SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#0072CE;strokeWidth=2;" edge="1" parent="1" source="services" target="postgres">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c6" value="Store Files" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#0072CE;strokeWidth=2;" edge="1" parent="1" source="services" target="filestore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c7" value="Send Email" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#0072CE;strokeWidth=2;" edge="1" parent="1" source="services" target="mail">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="c8" value="STOMP Push" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeColor=#0072CE;strokeWidth=2;" edge="1" parent="1" source="services" target="websocket">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+\end{lstlisting}
+
+\end{document}

@@ -1,21 +1,4 @@
-﻿import { getStoredAuthToken } from './session';
-
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api';
-
-async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const headers = new Headers(init.headers);
-  const token = getStoredAuthToken();
-
-  if (token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  const target = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
-  return globalThis["fetch"](target, {
-    ...init,
-    headers,
-  });
-}
 
 export type ApplicationOption = {
   id: number;
@@ -36,11 +19,35 @@ export type UserDto = {
   firstName?: string | null;
   lastName?: string | null;
   email?: string | null;
-  password?: string | null;
   role?: string | null;
   teamId?: number | null;
   teamName?: string | null;
   teamFunctionRole?: string | null;
+};
+
+export type UserRequest = {
+  id?: number | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password?: string | null;
+  role: string;
+  teamId?: number | null;
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type LoginResponse = {
+  userId: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  username: string;
+  token: string;
+  expiresInMs: number;
+  role: string;
 };
 
 export type TeamDto = {
@@ -132,6 +139,24 @@ export type IncidentDto = {
   slaDeadline?: string | null;
 };
 
+let authToken: string | null = localStorage.getItem('auth_token');
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+  if (token) {
+    localStorage.setItem('auth_token', token);
+  } else {
+    localStorage.removeItem('auth_token');
+  }
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
+export function clearAuthToken() {
+  setAuthToken(null);
+}
 
 async function parseError(response: Response): Promise<string> {
   const contentType = response.headers.get('content-type') ?? '';
@@ -149,228 +174,139 @@ async function parseError(response: Response): Promise<string> {
   return text.trim() || `Request failed with status ${response.status}`;
 }
 
-export async function fetchApplications(_clientUserId?: number): Promise<ApplicationOption[]> {
-  const url =  `${API_BASE_URL}/applications`;
-  const response = await apiFetch(url);
+async function request(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  if (authToken) {
+    headers.set('Authorization', `Bearer ${authToken}`);
+  }
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response;
+}
+
+export async function login(requestBody: LoginRequest): Promise<LoginResponse> {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody),
+  });
 
   if (!response.ok) {
     throw new Error(await parseError(response));
   }
 
   return response.json();
+}
+
+export async function fetchApplications(_clientUserId?: number): Promise<ApplicationOption[]> {
+  return (await request('/applications')).json();
 }
 
 export async function fetchTeams(): Promise<TeamDto[]> {
-  const response = await apiFetch(`${API_BASE_URL}/teams`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request('/teams')).json();
 }
 
 export async function fetchIncidents(): Promise<IncidentDto[]> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request('/incidents')).json();
 }
 
 export async function fetchManagerIncidents(managerId: number): Promise<IncidentDto[]> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/manager/${managerId}`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request(`/incidents/manager/${managerId}`)).json();
 }
 
 export async function fetchUsers(): Promise<UserDto[]> {
-  const response = await apiFetch(`${API_BASE_URL}/users`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request('/users')).json();
 }
 
-export async function updateUser(userId: number, user: UserDto): Promise<UserDto> {
-  const response = await apiFetch(`${API_BASE_URL}/users/${userId}`, {
+export async function updateUser(userId: number, user: UserRequest): Promise<UserDto> {
+  return (await request(`/users/${userId}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(user),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  })).json();
 }
 
 export async function fetchUserById(userId: number): Promise<UserDto> {
-  const response = await apiFetch(`${API_BASE_URL}/users/${userId}`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request(`/users/${userId}`)).json();
 }
 
 export async function fetchTeamById(teamId: number): Promise<TeamDto> {
-  const response = await apiFetch(`${API_BASE_URL}/teams/${teamId}`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request(`/teams/${teamId}`)).json();
 }
 
 export async function fetchTeamIncidents(teamId: number): Promise<IncidentDto[]> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/team/${teamId}`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request(`/incidents/team/${teamId}`)).json();
 }
 
 export async function fetchNewIncident(referenceId: string): Promise<IncidentDto> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/FindNewIncident/${encodeURIComponent(referenceId)}`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request(`/incidents/FindNewIncident/${encodeURIComponent(referenceId)}`)).json();
 }
 
 export async function updateIncident(id: number, incident: IncidentDto): Promise<IncidentDto> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/${id}`, {
+  return (await request(`/incidents/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(incident),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  })).json();
 }
 
 export async function claimIncident(incidentId: number, userId: number): Promise<IncidentDto> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/${incidentId}/claim/${userId}`, {
-    method: 'POST',
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request(`/incidents/${incidentId}/claim/${userId}`, { method: 'POST' })).json();
 }
 
-export async function rejectIncidentWithReason(
-  reference: string,
-  request: RejectIncidentRequest,
-): Promise<IncidentDto> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/rejectIncidentWithReason`, {
+export async function rejectIncidentWithReason(reference: string, requestBody: RejectIncidentRequest): Promise<IncidentDto> {
+  return (await request(`/incidents/${encodeURIComponent(reference)}/rejectIncidentWithReason`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+    body: JSON.stringify(requestBody),
+  })).json();
 }
 
-export async function rejectIncidentByManager(
-  reference: string,
-  request: RejectIncidentByManagerRequest,
-): Promise<IncidentDto> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/rejectIncidentByManager`, {
+export async function rejectIncidentByManager(reference: string, requestBody: RejectIncidentByManagerRequest): Promise<IncidentDto> {
+  return (await request(`/incidents/${encodeURIComponent(reference)}/rejectIncidentByManager`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+    body: JSON.stringify(requestBody),
+  })).json();
 }
 
-export async function reviewIncidentRejection(
-  reference: string,
-  request: ManagerIncidentRejectionReviewRequest,
-): Promise<IncidentDto> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/reviewIncidentRejection`, {
+export async function reviewIncidentRejection(reference: string, requestBody: ManagerIncidentRejectionReviewRequest): Promise<IncidentDto> {
+  return (await request(`/incidents/${encodeURIComponent(reference)}/reviewIncidentRejection`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+    body: JSON.stringify(requestBody),
+  })).json();
 }
+
 export async function reopenRejectedIncident(reference: string, managerId: number): Promise<IncidentDto> {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/${encodeURIComponent(reference)}/reopenRejectedIncident/${managerId}`, {
+  return (await request(`/incidents/${encodeURIComponent(reference)}/reopenRejectedIncident/${managerId}`, {
     method: 'POST',
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  })).json();
 }
 
 export function getAttachmentUrl(attachmentId: number): string {
-  return `${API_BASE_URL}/attachments/${attachmentId}/file`;
+  return authToken
+    ? `${API_BASE_URL}/attachments/${attachmentId}/file?token=${encodeURIComponent(authToken)}`
+    : `${API_BASE_URL}/attachments/${attachmentId}/file`;
 }
 
 export async function createClientIncident(formData: FormData) {
-  const response = await apiFetch(`${API_BASE_URL}/incidents/client`, {
+  return (await request('/incidents/client', {
     method: 'POST',
     body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  })).json();
 }
 
 export async function fetchRcaReportByIncident(incidentId: number): Promise<RcaReportDto | null> {
-  const response = await apiFetch(`${API_BASE_URL}/rca-reports/incident/${incidentId}`);
+  const response = await fetch(`${API_BASE_URL}/rca-reports/incident/${incidentId}`, {
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : undefined,
+  });
 
   if (response.status === 404) {
     return null;
@@ -384,104 +320,45 @@ export async function fetchRcaReportByIncident(incidentId: number): Promise<RcaR
 }
 
 export async function fetchRcaReports(): Promise<RcaReportDto[]> {
-  const response = await apiFetch(`${API_BASE_URL}/rca-reports`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request('/rca-reports')).json();
 }
 
 export async function createRcaReport(report: CreateRcaReportRequest): Promise<RcaReportDto> {
-  const response = await apiFetch(`${API_BASE_URL}/rca-reports`, {
+  return (await request('/rca-reports', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(report),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  })).json();
 }
 
 export async function updateRcaReport(id: number, report: Record<string, unknown>): Promise<RcaReportDto> {
-  const response = await apiFetch(`${API_BASE_URL}/rca-reports/${id}`, {
+  return (await request(`/rca-reports/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(report),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  })).json();
 }
 
-export async function updateRcaReportStatus(
-  id: number,
-  incidentManagerId: number,
-  validation: boolean,
-): Promise<RcaReportDto> {
-  const response = await apiFetch(`${API_BASE_URL}/rca-reports/${id}/status`, {
+export async function updateRcaReportStatus(id: number, incidentManagerId: number, validation: boolean): Promise<RcaReportDto> {
+  return (await request(`/rca-reports/${id}/status`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      incidentManagerId,
-      validation,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+    body: JSON.stringify({ incidentManagerId, validation }),
+  })).json();
 }
-
 
 export async function sendRcaToClient(id: number, managerId: number): Promise<RcaReportDto> {
-  const response = await apiFetch(`${API_BASE_URL}/rca-reports/${id}/send-to-client/${managerId}`, { method: 'POST' });
-  if (!response.ok) throw new Error(await parseError(response));
-  return response.json();
+  return (await request(`/rca-reports/${id}/send-to-client/${managerId}`, { method: 'POST' })).json();
 }
 
 export async function fetchClientRcaReports(clientId: number): Promise<RcaReportDto[]> {
-  const response = await apiFetch(`${API_BASE_URL}/rca-reports/client/${clientId}`);
-  if (!response.ok) throw new Error(await parseError(response));
-  return response.json();
+  return (await request(`/rca-reports/client/${clientId}`)).json();
 }
 
 export async function rejectRcaByClient(id: number, clientId: number, reason: string): Promise<RcaReportDto> {
-  const response = await apiFetch(`${API_BASE_URL}/rca-reports/${id}/client-rejection`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientId, reason }) });
-  if (!response.ok) throw new Error(await parseError(response));
-  return response.json();
+  return (await request(`/rca-reports/${id}/client-rejection`, {
+    method: 'POST',
+    body: JSON.stringify({ clientId, reason }),
+  })).json();
 }
+
 export async function fetchNotificationsByRecipient(userId: number): Promise<NotificationDto[]> {
-  const response = await apiFetch(`${API_BASE_URL}/notifications/recipient/${userId}`);
-
-  if (!response.ok) {
-    throw new Error(await parseError(response));
-  }
-
-  return response.json();
+  return (await request(`/notifications/recipient/${userId}`)).json();
 }
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { AlertCircle, ArrowLeft, Loader2, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
@@ -11,8 +11,8 @@ import {
 
 const levelOptions: Array<{ value: IncidentLevel; label: string; description: string }> = [
   { value: 'CRITICAL', label: 'Critique', description: 'Service indisponible ou impact majeur' },
-  { value: 'HIGH', label: 'Haute', description: 'Impact important sur le mÃ©tier' },
-  { value: 'MEDIUM', label: 'Moyenne', description: 'Impact limitÃ© avec contournement possible' },
+  { value: 'HIGH', label: 'Haute', description: 'Impact important sur le métier' },
+  { value: 'MEDIUM', label: 'Moyenne', description: 'Impact limité avec contournement possible' },
   { value: 'LOW', label: 'Basse', description: 'Demande mineure ou faible impact' },
 ];
 
@@ -23,6 +23,7 @@ function fileKey(file: File) {
 export default function CreateIncident() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const clientUserId = user?.id ?? 2;
   const [applications, setApplications] = useState<ApplicationOption[]>([]);
   const [applicationId, setApplicationId] = useState('');
   const [incidentLevel, setIncidentLevel] = useState<IncidentLevel | ''>('');
@@ -42,13 +43,7 @@ export default function CreateIncident() {
       setError('');
 
       try {
-        if (!user?.id) {
-          setError('Utilisateur non connecte.');
-          setLoadingApplications(false);
-          return;
-        }
-
-        const data = await fetchApplications(user.id);
+        const data = await fetchApplications(clientUserId);
         if (!active) return;
 
         setApplications(data);
@@ -78,7 +73,7 @@ export default function CreateIncident() {
   function handleFilesSelected(nextFiles: FileList | null) {
     if (!nextFiles || nextFiles.length === 0) return;
 
-    // Snapshot into a plain array right away â€” FileList is live and tied to
+    // Snapshot into a plain array right away — FileList is live and tied to
     // the input element, so if we hold onto the FileList itself inside the
     // setAttachments updater, resetting event.target.value afterwards wipes
     // it out before the updater actually runs.
@@ -140,11 +135,11 @@ export default function CreateIncident() {
     setSuccessMessage('');
 
     if (attachments.length === 0) {
-  setError('Veuillez ajouter au moins une piÃ¨ce jointe.');
+  setError('Veuillez ajouter au moins une pièce jointe.');
   return;
 }
     if (!applicationId) {
-      setError('Veuillez sÃ©lectionner une application liÃ©e Ã  votre compte.');
+      setError('Veuillez sélectionner une application liée à votre compte.');
       return;
     }
 
@@ -154,22 +149,14 @@ export default function CreateIncident() {
     }
 
     if (!incidentLevel) {
-      setError('Veuillez sÃ©lectionner une criticitÃ©.');
+      setError('Veuillez sélectionner une criticité.');
       return;
     }
-
-
-    if (!user?.id) {
-      setError('Utilisateur non connecte.');
-      return;
-    }
-
-    const currentUserId = user.id;
 
     const formData = new FormData();
     formData.append('description', description.trim());
     formData.append('applicationId', applicationId);
-    formData.append('createdById', String(currentUserId));
+    formData.append('createdById', String(clientUserId));
     formData.append('incidentLevel', incidentLevel);
     attachments.forEach((file) => formData.append('attachments', file));
 
@@ -178,13 +165,13 @@ export default function CreateIncident() {
     try {
       const incident = await createClientIncident(formData);
       setSuccessMessage(
-        `Ticket crÃ©Ã© avec succÃ¨s${incident?.reference ? ` : ${incident.reference}` : ''}.`
+        `Ticket créé avec succès${incident?.reference ? ` : ${incident.reference}` : ''}.`
       );
       setDescription('');
       setIncidentLevel('');
       setAttachments([]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'La crÃ©ation du ticket a Ã©chouÃ©.');
+      setError(err instanceof Error ? err.message : 'La création du ticket a échoué.');
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +185,7 @@ export default function CreateIncident() {
           className="flex items-center space-x-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>CrÃ©er un nouveau ticket</span>
+          <span>Créer un nouveau ticket</span>
         </button>
         <div className="text-xs text-gray-400 mt-2 ml-6">Accueil &gt; Nouveau ticket</div>
       </div>
@@ -219,13 +206,13 @@ export default function CreateIncident() {
           <div className="card-white p-8 space-y-8 relative">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Informations gÃ©nÃ©rales</h2>
+                <h2 className="text-xl font-bold text-gray-900">Informations générales</h2>
                 <p className="text-sm text-gray-500 mt-1">
                   Le formulaire envoie directement le ticket au service backend.
                 </p>
               </div>
               <div className="text-xs text-gray-400 text-right">
-                {selectedApplication ? `Application: ${selectedApplication.name}` : 'Aucune application sÃ©lectionnÃ©e'}
+                {selectedApplication ? `Application: ${selectedApplication.name}` : 'Aucune application sélectionnée'}
               </div>
             </div>
 
@@ -246,7 +233,7 @@ export default function CreateIncident() {
               <div className="min-w-0 space-y-6">
                 <div>
                   <label className="text-xs font-medium text-gray-500 block mb-1">
-                  Exemple:  ID du ticket (gÃ©nÃ©rÃ© automatiquement)
+                  Exemple:  ID du ticket (généré automatiquement)
                   </label>
                   <div className="font-bold text-gray-900">2026-06-23-1</div>
                 </div>
@@ -262,7 +249,7 @@ export default function CreateIncident() {
                     disabled={loadingApplications || submitting}
                   >
                     <option value="">
-                      {loadingApplications ? 'Chargement des applications...' : 'SÃ©lectionnez une application'}
+                      {loadingApplications ? 'Chargement des applications...' : 'Sélectionnez une application'}
                     </option>
                     {applications.map((application) => (
                       <option key={application.id} value={application.id}>
@@ -272,14 +259,14 @@ export default function CreateIncident() {
                   </select>
                   {!loadingApplications && applications.length === 0 ? (
                     <p className="text-xs text-amber-600 mt-1">
-                      Aucune application n'est associÃ©e Ã  ce compte client.
+                      Aucune application n'est associée à ce compte client.
                     </p>
                   ) : null}
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">
-                    CriticitÃ© <span className="text-danger">*</span>
+                    Criticité <span className="text-danger">*</span>
                   </label>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {levelOptions.map((option) => {
@@ -326,7 +313,7 @@ export default function CreateIncident() {
                     
                     <textarea
                       rows={6}
-                      placeholder="DÃ©crivez votre problÃ¨me en dÃ©tail..."
+                      placeholder="Décrivez votre problème en détail..."
                       className="w-full p-4 text-sm focus:outline-none resize-none"
                       value={description}
                       onChange={(event) => setDescription(event.target.value)}
@@ -341,7 +328,7 @@ export default function CreateIncident() {
               </div>
 
               <div className="min-w-0 self-start">
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">PiÃ¨ces jointes <span className="text-danger">*</span></label>
+                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Pièces jointes <span className="text-danger">*</span></label>
                 <label className="border-2 border-dashed border-gray-200 rounded-2xl h-48 md:h-56 flex flex-col items-center justify-center bg-gray-50 hover:bg-primary/5 hover:border-primary/30 transition-colors cursor-pointer group overflow-hidden flex-shrink-0">
                   <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mb-3 text-primary">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -353,7 +340,7 @@ export default function CreateIncident() {
                       />
                     </svg>
                   </div>
-                  <p className="text-sm font-medium text-gray-600">Glissez-dÃ©posez votre fichier ici</p>
+                  <p className="text-sm font-medium text-gray-600">Glissez-déposez votre fichier ici</p>
                   <p className="text-xs text-gray-400 mt-1">ou</p>
                   <span className="mt-2 text-primary font-semibold text-sm hover:underline">Parcourir les fichiers</span>
                   <input
@@ -369,12 +356,12 @@ export default function CreateIncident() {
                   />
                 </label>
                 <p className="text-xs text-gray-400 text-center mt-3">
-                  Formats acceptÃ©s : PNG, JPG, GIF, WEBP, PDF, DOC, DOCX (max. 5 Mo par fichier)
+                  Formats acceptés : PNG, JPG, GIF, WEBP, PDF, DOC, DOCX (max. 5 Mo par fichier)
                 </p>
                 {attachments.length > 0 ? (
                   <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600 flex flex-col min-h-0">
                     <p className="font-semibold text-gray-700 mb-2">
-                      Fichiers sÃ©lectionnÃ©s ({attachments.length})
+                      Fichiers sélectionnés ({attachments.length})
                     </p>
                     <ul className="space-y-2 max-h-64 overflow-y-auto pr-1">
                       {attachments.map((file) => {
@@ -400,7 +387,7 @@ export default function CreateIncident() {
                             <div className="min-w-0 flex-1">
                               <p className="truncate font-medium text-gray-700">{file.name}</p>
                               <p className="text-[11px] text-gray-400">
-                                {file.type || 'type inconnu'} Â· {Math.round(file.size / 1024)} KB
+                                {file.type || 'type inconnu'} · {Math.round(file.size / 1024)} KB
                               </p>
                             </div>
                             <button
@@ -439,7 +426,7 @@ export default function CreateIncident() {
                 disabled={submitting || loadingApplications || applications.length === 0}
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                <span>{submitting ? 'Envoi en cours' : 'CrÃ©er le ticket'}</span>
+                <span>{submitting ? 'Envoi en cours' : 'Créer le ticket'}</span>
               </button>
             </div>
           </div>
@@ -448,7 +435,3 @@ export default function CreateIncident() {
     </div>
   );
 }
-
-
-
-
