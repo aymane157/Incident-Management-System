@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static com.entreprise.incidentmanagement.domain.NotificationType.*;
 
@@ -38,7 +39,7 @@ public class NotificationService {
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
     @Async("notificationExecutor")
-    public NotificationDto sendMailNotification(NotificationDto notificationDto, String toEmail) {
+    public CompletableFuture<NotificationDto> sendMailNotification(NotificationDto notificationDto, String toEmail) {
         JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
 
         if (mailSender == null) {
@@ -48,7 +49,7 @@ public class NotificationService {
                             ? notificationDto.getIncident().getReference()
                             : null
             );
-            return notificationDto;
+            return CompletableFuture.completedFuture(notificationDto);
         }
 
         SimpleMailMessage mailMessage = new SimpleMailMessage();
@@ -100,7 +101,7 @@ public class NotificationService {
         log.info("Sending email to {}", toEmail);
         mailSender.send(mailMessage);
 
-        return notificationDto;
+        return CompletableFuture.completedFuture(notificationDto);
     }
 
     /*public NotificationDto sendRcaMailValidation(NotificationDto notificationDto,String toEmail) {

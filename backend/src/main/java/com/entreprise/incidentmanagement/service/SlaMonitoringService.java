@@ -5,6 +5,7 @@ import com.entreprise.incidentmanagement.domain.IncidentStatus;
 import com.entreprise.incidentmanagement.domain.Notification;
 import com.entreprise.incidentmanagement.domain.NotificationType;
 import com.entreprise.incidentmanagement.domain.User;
+import com.entreprise.incidentmanagement.dto.NotificationDto;
 import com.entreprise.incidentmanagement.mapper.DomainDtoMapper;
 import com.entreprise.incidentmanagement.repository.IncidentRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
@@ -115,7 +117,16 @@ public class SlaMonitoringService {
 
         var savedNotification = notificationService.saveDto(DomainDtoMapper.toDto(notification));
         if (recipient.getEmail() != null && !recipient.getEmail().isBlank()) {
-            notificationService.sendMailNotification(savedNotification, recipient.getEmail());
+            CompletableFuture<NotificationDto> future =
+                    notificationService.sendMailNotification(
+                            savedNotification,
+                            recipient.getEmail()
+                    );
+            future.thenAccept(Notif -> {
+                System.out.println("Email sent for incident "
+                        + Notif.getIncident().getReference());
+            });
+           // notificationService.sendMailNotification(savedNotification, recipient.getEmail());
         }
     }
 

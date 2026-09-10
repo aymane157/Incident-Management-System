@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 import static com.entreprise.incidentmanagement.domain.IncidentStatus.*;
 import static org.springframework.data.jpa.domain.AbstractAuditable_.createdBy;
@@ -236,7 +237,16 @@ public class IncidentService {
             NotificationDto savedNotification = notificationService.saveDto(notificationDto);
             String email = incidentManager.getEmail();
             if (email != null && !email.isBlank()) {
-                notificationService.sendMailNotification(savedNotification, email);
+                CompletableFuture<NotificationDto> future =
+                        notificationService.sendMailNotification(
+                                savedNotification,
+                                email
+                        );
+                future.thenAccept(Notif -> {
+                    System.out.println("Email sent for incident "
+                            + Notif.getIncident().getReference());
+                });
+                //notificationService.sendMailNotification(savedNotification, email);
             }
             return DomainDtoMapper.toDto(savedIncident);
         } catch (IOException | RuntimeException ex) {
@@ -407,7 +417,16 @@ public class IncidentService {
 
         NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
         if (managerEmail != null && !managerEmail.isBlank()) {
-            notificationService.sendMailNotification(notificationDto, managerEmail);
+            CompletableFuture<NotificationDto> future =
+                    notificationService.sendMailNotification(
+                            notificationDto,
+                            managerEmail
+                    );
+            future.thenAccept(Notif -> {
+                System.out.println("Email sent for incident "
+                        + Notif.getIncident().getReference());
+            });
+           // notificationService.sendMailNotification(notificationDto, managerEmail);
         }
     }
 
@@ -434,7 +453,16 @@ public class IncidentService {
 
         NotificationDto notificationDto = notificationService.saveDto(DomainDtoMapper.toDto(notification));
         if (clientEmail != null && !clientEmail.isBlank()) {
-            notificationService.sendMailNotification(notificationDto, clientEmail);
+            CompletableFuture<NotificationDto> future =
+                    notificationService.sendMailNotification(
+                            notificationDto,
+                            clientEmail
+                    );
+            future.thenAccept(Notif -> {
+                System.out.println("Email sent for incident "
+                        + Notif.getIncident().getReference());
+            });
+          //  notificationService.sendMailNotification(notificationDto, clientEmail);
         }
     }
     /*public IncidentDto closeIncident(){
