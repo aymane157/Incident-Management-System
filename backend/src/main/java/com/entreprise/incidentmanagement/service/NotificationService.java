@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +37,7 @@ public class NotificationService {
 
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
+    @Async("notificationExecutor")
     public NotificationDto sendMailNotification(NotificationDto notificationDto, String toEmail) {
         JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
 
