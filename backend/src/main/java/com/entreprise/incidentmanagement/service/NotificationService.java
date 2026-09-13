@@ -1,5 +1,6 @@
 package com.entreprise.incidentmanagement.service;
 
+import com.entreprise.incidentmanagement.config.MailRetryComponent;
 import com.entreprise.incidentmanagement.domain.Notification;
 import com.entreprise.incidentmanagement.domain.NotificationType;
 import com.entreprise.incidentmanagement.domain.User;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
@@ -32,6 +34,8 @@ import static com.entreprise.incidentmanagement.domain.NotificationType.*;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+
+    private final MailRetryComponent mailRetryComponent;
 
     @Value("${app-frontend:http://localhost:5173}")
     private String frontend;
@@ -98,8 +102,15 @@ public class NotificationService {
         mailMessage.setSubject(subject);
         mailMessage.setText(message.toString());
 
-        log.info("Sending email to {}", toEmail);
-        mailSender.send(mailMessage);
+        /*log.info("Sending email to {}", toEmail);*/
+        try {
+            log.info("Sending email to {}", toEmail);
+            mailRetryComponent.send(mailSender, mailMessage); // goes through the proxy
+        } catch (MailException ex) {
+            log.error("Failed to send notification to {} for incident {} after retries: {}",
+                    toEmail, notificationDto.getIncident().getReference(), ex.getMessage(), ex);
+            return CompletableFuture.failedFuture(ex);
+        }
 
         return CompletableFuture.completedFuture(notificationDto);
     }
