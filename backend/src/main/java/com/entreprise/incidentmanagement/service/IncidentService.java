@@ -152,7 +152,7 @@ public class IncidentService {
             updated.setSlaDeadline(calculateSla(incidentDto.getIncidentLevel()));
             NotificationDto notificationDto = buildClientIncidentNotification(updated,updated.getCreatedBy() );
             NotificationDto savedNotification = notificationService.saveDto(notificationDto);
-            String teamMail="aymanemwa2@gmail.com";
+            String teamMail="testmail@gmail.com";
             if (teamMail != null && !teamMail.isBlank()) {
                 notificationService.sendMailNotification(savedNotification, teamMail);
             }
